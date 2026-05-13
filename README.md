@@ -113,6 +113,21 @@ See [docs/PROOF_OF_WORK.md](docs/PROOF_OF_WORK.md).
 
 Read [AGENTS.md](AGENTS.md) before opening PRs. Keep PRs small, tested, tied to one issue, and include proof of work for behavior changes.
 
+## Review workflow
+
+Maintainers and contributors should use the repo's safe review notes before reviewing or requesting merges:
+
+- [MAINTAINING.md](MAINTAINING.md) — maintainer workflow, review order, and merge policy.
+- [docs/PR_TRIAGE.md](docs/PR_TRIAGE.md) — triage categories and reusable review responses.
+
+Concise review checklist:
+
+- Read the GitHub diff first and confirm the PR matches one issue.
+- Check for secrets, generated local state, unrelated rewrites, and suspicious binaries.
+- Review code directly in GitHub or from the PR branch; do not use external archive downloads for code review.
+- Run `npm run check` and `npm test`; add simulation proof when gameplay or economy behavior changes.
+- Decide clearly: merge, request changes, close duplicate, or defer.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
