@@ -25,6 +25,36 @@ Or pass custom options:
 node scripts/simulate.mjs --ticks 2500 --seed builder-role --json
 ```
 
+For PR comments, generate a paste-ready markdown report:
+
+```bash
+node scripts/simulate.mjs --ticks 1000 --markdown
+```
+
+Example output:
+
+```markdown
+## Screeps Simulation Report
+
+| Metric          | Value                  |
+| --------------- | ---------------------- |
+| Ticks           | 1000                   |
+| Seed            | `screeps-bounty-arena` |
+| OK              | yes                    |
+| Final RCL       | 4                      |
+| Energy capacity | 650                    |
+| Creep count     | 6                      |
+| Failures        | 0                      |
+
+### Milestones
+
+- Tick 25: reached RCL 2 with 1 creeps and 400 energy capacity.
+
+### Failures
+
+- None.
+```
+
 ## What the simulator tracks
 
 - ticks elapsed

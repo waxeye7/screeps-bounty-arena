@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-import { parseArgs } from 'node:util';
+import { parseArgs } from "node:util";
 
 const { values } = parseArgs({
   options: {
-    ticks: { type: 'string', short: 't', default: '1000' },
-    json: { type: 'boolean', default: false },
-    seed: { type: 'string', default: 'screeps-bounty-arena' },
+    ticks: { type: "string", short: "t", default: "1000" },
+    json: { type: "boolean", default: false },
+    markdown: { type: "boolean", default: false },
+    seed: { type: "string", default: "screeps-bounty-arena" },
   },
 });
 
@@ -17,13 +18,19 @@ if (!Number.isFinite(ticks) || ticks <= 0) {
 
 const result = runOfflineSimulation({ ticks, seed: values.seed });
 
+if (values.json && values.markdown) {
+  throw new Error("Use only one output mode: --json or --markdown");
+}
+
 if (values.json) {
   console.log(JSON.stringify(result, null, 2));
+} else if (values.markdown) {
+  console.log(formatMarkdownReport(result));
 } else {
   console.log(formatSummary(result));
 }
 
-export function runOfflineSimulation({ ticks, seed = 'screeps-bounty-arena' }) {
+export function runOfflineSimulation({ ticks, seed = "screeps-bounty-arena" }) {
   const rng = mulberry32(hashSeed(seed));
   const room = {
     tick: 0,
@@ -42,7 +49,10 @@ export function runOfflineSimulation({ ticks, seed = 'screeps-bounty-arena' }) {
 
     const harvestRate = room.creeps * (8 + Math.floor(rng() * 3));
     const upkeep = Math.max(0, room.creeps - 2) * 2;
-    room.energy = Math.min(room.energyCapacity, room.energy + harvestRate - upkeep);
+    room.energy = Math.min(
+      room.energyCapacity,
+      room.energy + harvestRate - upkeep,
+    );
 
     if (room.energy >= 200 && room.creeps < desiredCreepsForRcl(room.rcl)) {
       room.energy -= 200;
@@ -67,11 +77,21 @@ export function runOfflineSimulation({ ticks, seed = 'screeps-bounty-arena' }) {
       room.controllerProgress -= nextRclProgress;
       room.rcl += 1;
       room.energyCapacity += 100;
-      milestones.push({ tick, rcl: room.rcl, energyCapacity: room.energyCapacity, creeps: room.creeps });
+      milestones.push({
+        tick,
+        rcl: room.rcl,
+        energyCapacity: room.energyCapacity,
+        creeps: room.creeps,
+      });
     }
 
     if (room.energy < 0 || room.creeps <= 0) {
-      room.failures.push({ tick, reason: 'invalid colony state', energy: room.energy, creeps: room.creeps });
+      room.failures.push({
+        tick,
+        reason: "invalid colony state",
+        energy: room.energy,
+        creeps: room.creeps,
+      });
       break;
     }
   }
@@ -97,7 +117,48 @@ function desiredCreepsForRcl(rcl) {
 }
 
 function progressForNextRcl(rcl) {
-  return [0, 200, 450, 900, 1600, 2800, 5000, 9000][rcl] ?? Number.POSITIVE_INFINITY;
+  return (
+    [0, 200, 450, 900, 1600, 2800, 5000, 9000][rcl] ?? Number.POSITIVE_INFINITY
+  );
+}
+
+export function formatMarkdownReport(result) {
+  const lines = [
+    `## Screeps Simulation Report`,
+    ``,
+    `| Metric | Value |`,
+    `| --- | --- |`,
+    `| Ticks | ${result.ticks} |`,
+    `| Seed | \`${result.seed}\` |`,
+    `| OK | ${result.ok ? "yes" : "no"} |`,
+    `| Final RCL | ${result.final.rcl} |`,
+    `| Energy capacity | ${result.final.energyCapacity} |`,
+    `| Creep count | ${result.final.creeps} |`,
+    `| Failures | ${result.failures.length} |`,
+    ``,
+    `### Milestones`,
+  ];
+
+  if (result.milestones.length) {
+    for (const milestone of result.milestones) {
+      lines.push(
+        `- Tick ${milestone.tick}: reached RCL ${milestone.rcl} with ${milestone.creeps} creeps and ${milestone.energyCapacity} energy capacity.`,
+      );
+    }
+  } else {
+    lines.push("- No RCL milestones reached.");
+  }
+
+  lines.push(``, `### Failures`);
+  if (result.failures.length) {
+    for (const failure of result.failures) {
+      lines.push(`- Tick ${failure.tick}: ${failure.reason}`);
+    }
+  } else {
+    lines.push("- None.");
+  }
+
+  return lines.join("\n");
 }
 
 function formatSummary(result) {
@@ -111,20 +172,20 @@ function formatSummary(result) {
   ];
 
   if (result.milestones.length) {
-    lines.push('milestones:');
+    lines.push("milestones:");
     for (const milestone of result.milestones) {
       lines.push(`- tick ${milestone.tick}: reached RCL ${milestone.rcl}`);
     }
   }
 
   if (result.failures.length) {
-    lines.push('failures:');
+    lines.push("failures:");
     for (const failure of result.failures) {
       lines.push(`- tick ${failure.tick}: ${failure.reason}`);
     }
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function hashSeed(seed) {
