@@ -50,6 +50,7 @@ declare global {
     store: Store;
     harvest(source: Source): 0 | -9;
     transfer(target: StructureSpawn, resource: ResourceConstant): 0 | -9;
+    build(target: ConstructionSite): 0 | -9;
     moveTo(target: RoomObject, opts?: { visualizePathStyle?: { stroke?: string } }): number;
     say(message: string): number;
   }
@@ -57,6 +58,14 @@ declare global {
   interface Room {
     find(type: typeof FIND_SOURCES): Source[];
     find(type: typeof FIND_MY_SPAWNS): StructureSpawn[];
+    find(type: typeof FIND_CONSTRUCTION_SITES): ConstructionSite[];
+  }
+
+  interface ConstructionSite extends RoomObject {
+    my: boolean;
+    structureType: string;
+    progress: number;
+    total: number;
   }
 
   interface StructureSpawn extends RoomObject {

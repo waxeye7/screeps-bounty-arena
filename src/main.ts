@@ -1,5 +1,6 @@
 import { ensureBasicHarvesters } from './planning/spawn';
 import { runHarvester } from './roles/harvester';
+import { runBuilder } from './roles/builder';
 
 export function loop(): void {
   cleanupDeadCreeps();
@@ -10,6 +11,9 @@ export function loop(): void {
 
   for (const creep of Object.values(Game.creeps)) {
     switch (creep.memory.role) {
+      case 'builder':
+        runBuilder(creep);
+        break;
       case 'harvester':
       default:
         runHarvester(creep);

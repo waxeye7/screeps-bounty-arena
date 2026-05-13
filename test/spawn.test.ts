@@ -17,7 +17,7 @@ describe('ensureBasicHarvesters', () => {
       spawning: null,
       pos: { isNearTo: () => true },
       room: { find: () => [] },
-      structureType: STRUCTURE_SPAWN,
+      structureType: 'spawn' as const,
       spawnCreep: (...args: unknown[]) => {
         calls.push(args);
         return 0;
