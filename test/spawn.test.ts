@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ensureBasicHarvesters } from '../src/planning/spawn';
+import { buildHarvesterBody, ensureBasicHarvesters } from '../src/planning/spawn';
 
 describe('ensureBasicHarvesters', () => {
   it('spawns a harvester when below target', () => {
@@ -16,7 +16,7 @@ describe('ensureBasicHarvesters', () => {
       name: 'Spawn1',
       spawning: null,
       pos: { isNearTo: () => true },
-      room: { find: () => [] },
+      room: { energyAvailable: 300, find: () => [] },
       structureType: STRUCTURE_SPAWN,
       spawnCreep: (...args: unknown[]) => {
         calls.push(args);
@@ -32,5 +32,34 @@ describe('ensureBasicHarvesters', () => {
       'Harvester123',
       { memory: { role: 'harvester' } },
     ]);
+  });
+});
+
+describe('buildHarvesterBody', () => {
+  it('keeps low-energy rooms on the minimal viable body', () => {
+    expect(buildHarvesterBody(0)).toEqual([WORK, CARRY, MOVE]);
+    expect(buildHarvesterBody(199)).toEqual([WORK, CARRY, MOVE]);
+  });
+
+  it('scales harvester bodies as room energy increases', () => {
+    expect(buildHarvesterBody(400)).toEqual([WORK, CARRY, MOVE, WORK, CARRY, MOVE]);
+    expect(buildHarvesterBody(800)).toEqual([
+      WORK,
+      CARRY,
+      MOVE,
+      WORK,
+      CARRY,
+      MOVE,
+      WORK,
+      CARRY,
+      MOVE,
+      WORK,
+      CARRY,
+      MOVE,
+    ]);
+  });
+
+  it('caps harvester body size to keep spawn attempts practical', () => {
+    expect(buildHarvesterBody(10_000)).toHaveLength(12);
   });
 });
