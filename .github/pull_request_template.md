@@ -20,8 +20,10 @@ Attach or link evidence when relevant:
 - Simulation report:
 - Replay/private-server log:
 - Target RCL / tick count:
-- Simulation/private-server seed:
-- Spawn/room random seed/config:
+- Simulation/private-server base seed:
+- Room seed:
+- Spawn seed:
+- Spawn config:
 - Commit SHA tested:
 
 For RCL milestone claims, a 10–60 second sped-up video is preferred. Show the start state, the RCL milestone, and enough seed/config detail for reviewers to reproduce it.

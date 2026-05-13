@@ -23,7 +23,15 @@ Or pass custom options:
 
 ```bash
 node scripts/simulate.mjs --ticks 2500 --seed builder-role --json
+node scripts/simulate.mjs --ticks 2500 --seed builder-role --room-seed W8N3-alpha --spawn-seed spawn-a --spawn-config conservative --json
 ```
+
+`--seed` is the base run seed. When explicit values are not provided, the
+simulator derives `roomSeed` as `<seed>:room` and `spawnSeed` as `<seed>:spawn`.
+Use `--room-seed` for room/harvest randomness and `--spawn-seed` plus
+`--spawn-config` (`conservative`, `balanced`, or `aggressive`) for reproducible
+spawn-cost choices. JSON output includes all of these fields under `seeds` so a
+reviewer can replay the same setup.
 
 For PR comments, generate a paste-ready markdown report:
 
@@ -36,15 +44,18 @@ Example output:
 ```markdown
 ## Screeps Simulation Report
 
-| Metric          | Value                  |
-| --------------- | ---------------------- |
-| Ticks           | 1000                   |
-| Seed            | `screeps-bounty-arena` |
-| OK              | yes                    |
-| Final RCL       | 4                      |
-| Energy capacity | 650                    |
-| Creep count     | 6                      |
-| Failures        | 0                      |
+| Metric          | Value                        |
+| --------------- | ---------------------------- |
+| Ticks           | 1000                         |
+| Seed            | `screeps-bounty-arena`       |
+| Room seed       | `screeps-bounty-arena:room`  |
+| Spawn seed      | `screeps-bounty-arena:spawn` |
+| Spawn config    | `balanced`                   |
+| OK              | yes                          |
+| Final RCL       | 4                            |
+| Energy capacity | 650                          |
+| Creep count     | 6                            |
+| Failures        | 0                            |
 
 ### Milestones
 

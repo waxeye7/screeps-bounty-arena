@@ -8,6 +8,9 @@ const { values } = parseArgs({
     json: { type: "boolean", default: false },
     markdown: { type: "boolean", default: false },
     seed: { type: "string", default: "screeps-bounty-arena" },
+    "room-seed": { type: "string" },
+    "spawn-seed": { type: "string" },
+    "spawn-config": { type: "string", default: "balanced" },
   },
 });
 
@@ -16,7 +19,13 @@ if (!Number.isFinite(ticks) || ticks <= 0) {
   throw new Error(`--ticks must be a positive integer, got ${values.ticks}`);
 }
 
-const result = runOfflineSimulation({ ticks, seed: values.seed });
+const result = runOfflineSimulation({
+  ticks,
+  seed: values.seed,
+  roomSeed: values["room-seed"],
+  spawnSeed: values["spawn-seed"],
+  spawnConfig: values["spawn-config"],
+});
 
 if (values.json && values.markdown) {
   throw new Error("Use only one output mode: --json or --markdown");
@@ -30,8 +39,23 @@ if (values.json) {
   console.log(formatSummary(result));
 }
 
-export function runOfflineSimulation({ ticks, seed = "screeps-bounty-arena" }) {
-  const rng = mulberry32(hashSeed(seed));
+export function runOfflineSimulation({
+  ticks,
+  seed = "screeps-bounty-arena",
+  roomSeed,
+  spawnSeed,
+  spawnConfig = "balanced",
+}) {
+  const seeds = normalizeSimulationSeeds({
+    seed,
+    roomSeed,
+    spawnSeed,
+    spawnConfig,
+  });
+  const roomRng = mulberry32(hashSeed(seeds.roomSeed));
+  const spawnRng = mulberry32(
+    hashSeed(`${seeds.spawnSeed}:${seeds.spawnConfig}`),
+  );
   const room = {
     tick: 0,
     rcl: 1,
@@ -47,15 +71,19 @@ export function runOfflineSimulation({ ticks, seed = "screeps-bounty-arena" }) {
   for (let tick = 1; tick <= ticks; tick += 1) {
     room.tick = tick;
 
-    const harvestRate = room.creeps * (8 + Math.floor(rng() * 3));
+    const harvestRate = room.creeps * (8 + Math.floor(roomRng() * 3));
     const upkeep = Math.max(0, room.creeps - 2) * 2;
     room.energy = Math.min(
       room.energyCapacity,
       room.energy + harvestRate - upkeep,
     );
 
-    if (room.energy >= 200 && room.creeps < desiredCreepsForRcl(room.rcl)) {
-      room.energy -= 200;
+    const spawnCost = nextSpawnCost(spawnRng, seeds.spawnConfig);
+    if (
+      room.energy >= spawnCost &&
+      room.creeps < desiredCreepsForRcl(room.rcl)
+    ) {
+      room.energy -= spawnCost;
       room.creeps += 1;
     }
 
@@ -100,6 +128,7 @@ export function runOfflineSimulation({ ticks, seed = "screeps-bounty-arena" }) {
     ok: room.failures.length === 0,
     ticks,
     seed,
+    seeds,
     final: {
       rcl: room.rcl,
       controllerProgress: room.controllerProgress,
@@ -110,6 +139,30 @@ export function runOfflineSimulation({ ticks, seed = "screeps-bounty-arena" }) {
     milestones,
     failures: room.failures,
   };
+}
+
+function normalizeSimulationSeeds({
+  seed = "screeps-bounty-arena",
+  roomSeed,
+  spawnSeed,
+  spawnConfig = "balanced",
+}) {
+  return {
+    baseSeed: seed,
+    roomSeed: roomSeed || `${seed}:room`,
+    spawnSeed: spawnSeed || `${seed}:spawn`,
+    spawnConfig,
+  };
+}
+
+function nextSpawnCost(rng, spawnConfig) {
+  const profiles = {
+    conservative: [200, 200, 250],
+    balanced: [200, 250, 300],
+    aggressive: [250, 300, 350],
+  };
+  const costs = profiles[spawnConfig] ?? profiles.balanced;
+  return costs[Math.floor(rng() * costs.length)];
 }
 
 function desiredCreepsForRcl(rcl) {
@@ -130,6 +183,9 @@ export function formatMarkdownReport(result) {
     `| --- | --- |`,
     `| Ticks | ${result.ticks} |`,
     `| Seed | \`${result.seed}\` |`,
+    `| Room seed | \`${result.seeds.roomSeed}\` |`,
+    `| Spawn seed | \`${result.seeds.spawnSeed}\` |`,
+    `| Spawn config | \`${result.seeds.spawnConfig}\` |`,
     `| OK | ${result.ok ? "yes" : "no"} |`,
     `| Final RCL | ${result.final.rcl} |`,
     `| Energy capacity | ${result.final.energyCapacity} |`,
@@ -165,6 +221,10 @@ function formatSummary(result) {
   const lines = [
     `Screeps Bounty Arena offline simulation`,
     `ticks: ${result.ticks}`,
+    `seed: ${result.seed}`,
+    `room seed: ${result.seeds.roomSeed}`,
+    `spawn seed: ${result.seeds.spawnSeed}`,
+    `spawn config: ${result.seeds.spawnConfig}`,
     `ok: ${result.ok}`,
     `final RCL: ${result.final.rcl}`,
     `creeps: ${result.final.creeps}`,
