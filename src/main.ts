@@ -1,3 +1,4 @@
+import { runTowerDefense } from './defense/towers';
 import { ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders } from './planning/spawn';
 import { runBuilder } from './roles/builder';
 import { runHarvester } from './roles/harvester';
@@ -6,10 +7,17 @@ import { runUpgrader } from './roles/upgrader';
 export function loop(): void {
   cleanupDeadCreeps();
 
+  const rooms = new Set<Room>();
+
   for (const spawn of Object.values(Game.spawns)) {
+    rooms.add(spawn.room);
     ensureBasicHarvesters(spawn);
     ensureBasicUpgraders(spawn);
     ensureBasicBuilders(spawn);
+  }
+
+  for (const room of rooms) {
+    runTowerDefense(room);
   }
 
   for (const creep of Object.values(Game.creeps)) {
