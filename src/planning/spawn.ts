@@ -70,3 +70,19 @@ export function ensureBasicBuilders(spawn: StructureSpawn, desiredCount = 1, req
     memory: { role: 'builder' },
   });
 }
+
+export function ensureBasicRepairers(spawn: StructureSpawn, desiredCount = 1, requiredHarvesters = 3): void {
+  const damagedStructures = spawn.room.find(FIND_STRUCTURES).filter((structure) => structure.hits < structure.hitsMax);
+  if (damagedStructures.length === 0 || spawn.spawning) return;
+
+  const harvesters = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'harvester');
+  if (harvesters.length < requiredHarvesters) return;
+
+  const repairers = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'repairer');
+  if (repairers.length >= desiredCount) return;
+
+  const name = `Repairer${Game.time}`;
+  spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
+    memory: { role: 'repairer' },
+  });
+}

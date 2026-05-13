@@ -7,13 +7,16 @@ declare global {
   var ERR_NOT_IN_RANGE: -9;
   var FIND_SOURCES: 105;
   var FIND_MY_SPAWNS: 100;
+  var FIND_STRUCTURES: 108;
   var FIND_CONSTRUCTION_SITES: 106;
   var STRUCTURE_SPAWN: 'spawn';
+  var STRUCTURE_WALL: 'constructedWall';
+  var STRUCTURE_RAMPART: 'rampart';
   var RESOURCE_ENERGY: 'energy';
 
   type BodyPartConstant = 'work' | 'carry' | 'move';
   type ResourceConstant = 'energy';
-  type CreepRole = 'harvester' | 'upgrader' | 'builder';
+  type CreepRole = 'harvester' | 'upgrader' | 'builder' | 'repairer';
 
   interface MemoryGlobal {
     creeps: Record<string, CreepMemory>;
@@ -62,6 +65,7 @@ declare global {
     harvest(source: Source): 0 | -9;
     transfer(target: StructureSpawn, resource: ResourceConstant): 0 | -9;
     build(target: ConstructionSite): 0 | -9;
+    repair(target: Structure): 0 | -9;
     upgradeController(target: StructureController): 0 | -9;
     moveTo(target: RoomObject, opts?: { visualizePathStyle?: { stroke?: string } }): number;
     say(message: string): number;
@@ -73,10 +77,17 @@ declare global {
     energyCapacityAvailable?: number;
     find(type: typeof FIND_SOURCES): Source[];
     find(type: typeof FIND_MY_SPAWNS): StructureSpawn[];
+    find(type: typeof FIND_STRUCTURES): Structure[];
     find(type: typeof FIND_CONSTRUCTION_SITES): ConstructionSite[];
   }
 
-  interface StructureSpawn extends RoomObject {
+  interface Structure extends RoomObject {
+    structureType: string;
+    hits: number;
+    hitsMax: number;
+  }
+
+  interface StructureSpawn extends Structure {
     structureType: typeof STRUCTURE_SPAWN;
     name: string;
     room: Room;

@@ -1,6 +1,7 @@
-import { ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders } from './planning/spawn';
+import { ensureBasicBuilders, ensureBasicHarvesters, ensureBasicRepairers, ensureBasicUpgraders } from './planning/spawn';
 import { runBuilder } from './roles/builder';
 import { runHarvester } from './roles/harvester';
+import { runRepairer } from './roles/repairer';
 import { runUpgrader } from './roles/upgrader';
 
 export function loop(): void {
@@ -10,6 +11,7 @@ export function loop(): void {
     ensureBasicHarvesters(spawn);
     ensureBasicUpgraders(spawn);
     ensureBasicBuilders(spawn);
+    ensureBasicRepairers(spawn);
   }
 
   for (const creep of Object.values(Game.creeps)) {
@@ -19,6 +21,9 @@ export function loop(): void {
         break;
       case 'upgrader':
         runUpgrader(creep);
+        break;
+      case 'repairer':
+        runRepairer(creep);
         break;
       case 'harvester':
       default:
