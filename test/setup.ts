@@ -8,4 +8,4 @@ globalThis.FIND_CONSTRUCTION_SITES = 106;
 globalThis.STRUCTURE_SPAWN = 'spawn';
 globalThis.RESOURCE_ENERGY = 'energy';
 
-globalThis.Memory = { creeps: {} };
+globalThis.Memory = { creeps: {}, rooms: {} };

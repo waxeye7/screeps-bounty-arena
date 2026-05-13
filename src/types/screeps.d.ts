@@ -17,6 +17,12 @@ declare global {
 
   interface MemoryGlobal {
     creeps: Record<string, CreepMemory>;
+    rooms?: Record<string, RoomMemory>;
+  }
+
+  interface RoomMemory {
+    version?: number;
+    sources?: string[];
   }
 
   interface CreepMemory {
@@ -68,6 +74,7 @@ declare global {
   }
 
   interface Room {
+    name?: string;
     controller?: StructureController;
     energyAvailable?: number;
     energyCapacityAvailable?: number;

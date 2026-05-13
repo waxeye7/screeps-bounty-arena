@@ -1,10 +1,11 @@
 import { ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders } from './planning/spawn';
+import { maintainMemory } from './memory';
 import { runBuilder } from './roles/builder';
 import { runHarvester } from './roles/harvester';
 import { runUpgrader } from './roles/upgrader';
 
 export function loop(): void {
-  cleanupDeadCreeps();
+  maintainMemory();
 
   for (const spawn of Object.values(Game.spawns)) {
     ensureBasicHarvesters(spawn);
@@ -24,14 +25,6 @@ export function loop(): void {
       default:
         runHarvester(creep);
         break;
-    }
-  }
-}
-
-function cleanupDeadCreeps(): void {
-  for (const name of Object.keys(Memory.creeps)) {
-    if (!Game.creeps[name]) {
-      delete Memory.creeps[name];
     }
   }
 }
