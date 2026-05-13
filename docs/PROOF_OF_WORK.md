@@ -47,6 +47,10 @@ Video: <attach mp4/gif or link>
 Simulation report: <paste JSON/markdown summary>
 ```
 
+## Reusable proof artifact template
+
+For a fuller checklist, copy [`proof-artifact-template.md`](proof-artifact-template.md) into the PR description or attach a filled version as a PR comment. The template extends the standards above; it does not replace the required proof fields, video standard, or fake-proof rules in this document.
+
 ## Video proof standard
 
 For RCL milestone bounties, the best proof is a short accelerated clip:
