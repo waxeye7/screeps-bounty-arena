@@ -55,6 +55,8 @@ declare global {
   }
 
   interface Room {
+    energyAvailable?: number;
+    energyCapacityAvailable?: number;
     find(type: typeof FIND_SOURCES): Source[];
     find(type: typeof FIND_MY_SPAWNS): StructureSpawn[];
   }
