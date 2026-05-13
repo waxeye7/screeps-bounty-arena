@@ -4,6 +4,8 @@ Bounty PRs should include evidence that the bot behavior works, not just a code 
 
 ## Preferred proof
 
+For repeatable submissions, start from the reusable [proof artifact template](./PROOF_ARTIFACT_TEMPLATE.md), then paste the completed artifact into the PR body or a PR comment.
+
 For gameplay/economy changes, attach at least one of:
 
 - a short video of a room reaching the requested RCL milestone
@@ -24,6 +26,8 @@ If a bounty asks for `RCL X`, the PR should include:
 6. final room summary
 7. video/GIF/screenshot evidence when available
 8. exact verification commands
+
+The reusable template includes all required fields: target RCL, tick reached, seed/config, commit SHA, video link, and simulation output.
 
 Example PR evidence block:
 
