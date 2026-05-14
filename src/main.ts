@@ -6,6 +6,7 @@ import {
   ensureBasicUpgraders,
   ensureContainerMiningEconomy,
 } from './planning/spawn';
+import { planRcl2Extensions } from './planning/extensions';
 import { runBuilder } from './roles/builder';
 import { runHauler } from './roles/hauler';
 import { runHarvester } from './roles/harvester';
@@ -24,6 +25,7 @@ export function loop(): void {
     rooms.add(spawn.room);
     ensureBasicHarvesters(spawn);
     ensureContainerMiningEconomy(spawn);
+    planRcl2Extensions(spawn.room);
     ensureBasicUpgraders(spawn);
     ensureBasicBuilders(spawn);
     ensureBasicRepairers(spawn);

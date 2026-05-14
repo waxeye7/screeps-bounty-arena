@@ -55,11 +55,16 @@ declare global {
   }
 
   interface RoomPosition {
+    x?: number;
+    y?: number;
+    roomName?: string;
     isNearTo(target: RoomObject): boolean;
   }
 
   interface Source extends RoomObject {}
-  interface StructureController extends RoomObject {}
+  interface StructureController extends RoomObject {
+    level?: number;
+  }
 
   interface Resource<TResource extends ResourceConstant = ResourceConstant> extends RoomObject {
     amount: number;
@@ -103,6 +108,7 @@ declare global {
   }
 
   interface Room {
+    name?: string;
     controller?: StructureController;
     energyAvailable?: number;
     energyCapacityAvailable?: number;
@@ -114,6 +120,7 @@ declare global {
     find(type: typeof FIND_STRUCTURES): Structure[];
     find(type: typeof FIND_DROPPED_RESOURCES): Resource<ResourceConstant>[];
     find(type: typeof FIND_CONSTRUCTION_SITES): ConstructionSite[];
+    createConstructionSite?(x: number, y: number, structureType: string): number;
   }
 
   interface Structure extends RoomObject {
