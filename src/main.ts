@@ -5,6 +5,7 @@ import {
   ensureBasicRepairers,
   ensureBasicUpgraders,
   ensureContainerMiningEconomy,
+  ensureEmergencyRecovery,
 } from './planning/spawn';
 import { runBuilder } from './roles/builder';
 import { runHauler } from './roles/hauler';
@@ -22,6 +23,7 @@ export function loop(): void {
 
   for (const spawn of Object.values(Game.spawns)) {
     rooms.add(spawn.room);
+    if (ensureEmergencyRecovery(spawn)) continue;
     ensureBasicHarvesters(spawn);
     ensureContainerMiningEconomy(spawn);
     ensureBasicUpgraders(spawn);

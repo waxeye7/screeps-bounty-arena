@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildWorkerBody, ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders } from '../src/planning/spawn';
+import { buildWorkerBody, ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders, ensureEmergencyRecovery } from '../src/planning/spawn';
 
 describe('buildWorkerBody', () => {
   it('keeps the minimal 200-energy worker body', () => {
@@ -36,6 +36,57 @@ function makeSpawn(calls: unknown[], energyAvailable = 200, constructionSites: C
 }
 
 describe('spawn planning', () => {
+
+  it('detects emergency and spawns recovery worker when no harvesters or miners exist', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 999,
+      creeps: {},
+      spawns: {},
+    } as GameGlobal;
+
+    const spawn = makeSpawn(calls, 100);
+    const isEmergency = ensureEmergencyRecovery(spawn);
+
+    expect(isEmergency).toBe(true);
+    expect(calls).toHaveLength(1);
+    // Even with 100 energy, it tries to build a 200 energy body (fallback minimal)
+    expect(calls[0]).toEqual([[WORK, CARRY, MOVE], 'RecoveryHarvester999', { memory: { role: 'harvester' } }]);
+  });
+
+  it('detects emergency and uses available energy for recovery worker', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 999,
+      creeps: {},
+      spawns: {},
+    } as GameGlobal;
+
+    const spawn = makeSpawn(calls, 300);
+    const isEmergency = ensureEmergencyRecovery(spawn);
+
+    expect(isEmergency).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual([[WORK, CARRY, MOVE, WORK], 'RecoveryHarvester999', { memory: { role: 'harvester' } }]);
+  });
+
+  it('returns false for non-emergency scenarios', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 999,
+      creeps: {
+        Harvester1: { memory: { role: 'harvester' } } as Creep,
+      },
+      spawns: {},
+    } as GameGlobal;
+
+    const spawn = makeSpawn(calls, 300);
+    const isEmergency = ensureEmergencyRecovery(spawn);
+
+    expect(isEmergency).toBe(false);
+    expect(calls).toHaveLength(0);
+  });
+
   it('spawns a harvester when below target', () => {
     const calls: unknown[] = [];
     globalThis.Game = {

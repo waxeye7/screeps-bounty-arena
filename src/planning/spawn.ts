@@ -136,3 +136,27 @@ function hasDroppedEnergy(room: Room): boolean {
     .find(FIND_DROPPED_RESOURCES)
     .some((resource) => resource.resourceType === RESOURCE_ENERGY && resource.amount > 0);
 }
+
+export function ensureEmergencyRecovery(spawn: StructureSpawn): boolean {
+  if (spawn.spawning) return true; // Handled
+
+  const creeps = Object.values(Game.creeps);
+  const harvesters = creeps.filter(c => c.memory.role === 'harvester');
+  const miners = creeps.filter(c => c.memory.role === 'miner');
+  
+  // Emergency condition: 0 harvesters and 0 miners (no energy income)
+  if (harvesters.length === 0 && miners.length === 0) {
+    const availableEnergy = spawn.room.energyAvailable ?? 0;
+    // Spawn minimal viable recovery worker using only currently available energy
+    // Even if it's less than standard MIN_WORKER_ENERGY, try to spawn a basic [WORK, CARRY, MOVE]
+    // which costs 200. If energy is less, we must wait until it naturally regens to 200, but we request 200.
+    const energyToUse = Math.max(MIN_WORKER_ENERGY, availableEnergy);
+    
+    spawn.spawnCreep(buildWorkerBody(energyToUse), `RecoveryHarvester${Game.time}`, {
+      memory: { role: 'harvester' },
+    });
+    return true; // We are in an emergency state, block other spawns
+  }
+  
+  return false; // Not an emergency
+}
