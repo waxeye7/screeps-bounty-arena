@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 describe("offline simulation", () => {
@@ -60,6 +60,59 @@ describe("offline simulation", () => {
         },
       ),
     ).toThrow();
+  });
+
+  it("includes replay breadcrumbs when an explicit gate is missed", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "scripts/simulate.mjs",
+        "--ticks",
+        "100",
+        "--require-rcl",
+        "8",
+        "--json",
+      ],
+      {
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status).toBe(1);
+    const report = JSON.parse(result.stdout) as {
+      ok: boolean;
+      breadcrumbs: Array<{ tick: number; type: string; gate?: string }>;
+    };
+
+    expect(report.ok).toBe(false);
+    expect(report.breadcrumbs.length).toBeGreaterThan(0);
+    expect(report.breadcrumbs).toContainEqual(
+      expect.objectContaining({
+        type: "gate-failure",
+        gate: "required-rcl",
+      }),
+    );
+  });
+
+  it("prints replay breadcrumbs in failed markdown reports", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "scripts/simulate.mjs",
+        "--ticks",
+        "100",
+        "--require-rcl",
+        "8",
+        "--markdown",
+      ],
+      {
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("### Replay Breadcrumbs");
+    expect(result.stdout).toContain("gate-failure");
   });
 
   it("fails instead of silently falling back when spawn-config is invalid", () => {

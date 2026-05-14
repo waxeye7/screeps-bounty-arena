@@ -39,6 +39,8 @@ Use `--room-seed` for room/harvest randomness and `--spawn-seed` plus `--spawn-c
 
 Use `--require-rcl` and `--require-rcl-by` to turn simulation claims into pass/fail gates. Failed gates exit non-zero, which lets CI catch regressions.
 
+When a gate fails, the simulator includes replay breadcrumbs in JSON and markdown output. Breadcrumbs are a compact ring buffer of recent simulation events such as spawns, RCL milestones, energy-capacity increases, invalid state failures, and gate failures. The default buffer keeps the last 20 events; use `--breadcrumb-limit <n>` to adjust it or `--breadcrumb-limit 0` to disable capture.
+
 ## Named fixtures
 
 Named fixtures provide reusable bad-start and recovery scenarios for agents and maintainers. List them with:
@@ -115,6 +117,10 @@ Example output:
 ### Milestones
 
 - Tick 13: reached RCL 2 with 2 creeps and 400 energy capacity.
+
+### Replay Breadcrumbs
+
+- None captured; simulation passed all gates.
 ```
 
 ## Current CI gates
