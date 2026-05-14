@@ -1,0 +1,45 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { cleanupDeadCreeps, migrateRoomMemory, migrateRoomMemoryRecord, ROOM_MEMORY_VERSION } from '../src/memory';
+
+beforeEach(() => {
+  globalThis.Memory = { creeps: {}, rooms: {} };
+  globalThis.Game = { time: 1, creeps: {}, spawns: {}, rooms: {} } as GameGlobal;
+});
+
+describe('memory helpers', () => {
+  it('removes memory entries for creeps that no longer exist', () => {
+    Memory.creeps = {
+      AliveHarvester: { role: 'harvester' },
+      DeadBuilder: { role: 'builder' },
+    };
+    Game.creeps = {
+      AliveHarvester: { name: 'AliveHarvester', memory: Memory.creeps.AliveHarvester } as Creep,
+    };
+
+    expect(cleanupDeadCreeps()).toEqual(['DeadBuilder']);
+    expect(Memory.creeps).toEqual({ AliveHarvester: { role: 'harvester' } });
+  });
+
+  it('adds a current version to an existing room memory record without dropping fields', () => {
+    expect(migrateRoomMemoryRecord({ version: 0, planner: 'early' } as Partial<RoomMemory>)).toEqual({
+      version: ROOM_MEMORY_VERSION,
+      planner: 'early',
+    });
+  });
+
+  it('creates versioned memory for visible rooms', () => {
+    Game.rooms = {
+      W1N1: {} as Room,
+      W1N2: {} as Room,
+    };
+    Memory.rooms = { W1N1: { version: 0 } };
+
+    migrateRoomMemory();
+
+    expect(Memory.rooms).toEqual({
+      W1N1: { version: ROOM_MEMORY_VERSION },
+      W1N2: { version: ROOM_MEMORY_VERSION },
+    });
+  });
+});
