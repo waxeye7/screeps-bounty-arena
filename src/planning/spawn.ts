@@ -70,3 +70,50 @@ export function ensureBasicBuilders(spawn: StructureSpawn, desiredCount = 1, req
     memory: { role: 'builder' },
   });
 }
+
+export function ensureContainerMiningEconomy(
+  spawn: StructureSpawn,
+  desiredMiners = 1,
+  desiredHaulers = 1,
+  requiredHarvesters = 2,
+): void {
+  if (spawn.spawning) return;
+
+  const harvesters = countRole('harvester');
+  if (harvesters < requiredHarvesters) return;
+
+  if (!hasSourceSideContainer(spawn.room) && !hasDroppedEnergy(spawn.room)) return;
+
+  if (countRole('miner') < desiredMiners) {
+    spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), `Miner${Game.time}`, {
+      memory: { role: 'miner' },
+    });
+    return;
+  }
+
+  if (countRole('hauler') < desiredHaulers) {
+    spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), `Hauler${Game.time}`, {
+      memory: { role: 'hauler' },
+    });
+  }
+}
+
+function countRole(role: CreepRole): number {
+  return Object.values(Game.creeps).filter((creep) => creep.memory.role === role).length;
+}
+
+function hasSourceSideContainer(room: Room): boolean {
+  const sources = room.find(FIND_SOURCES);
+  return room
+    .find(FIND_STRUCTURES)
+    .some(
+      (structure): structure is StructureContainer =>
+        structure.structureType === STRUCTURE_CONTAINER && sources.some((source) => structure.pos.isNearTo(source)),
+    );
+}
+
+function hasDroppedEnergy(room: Room): boolean {
+  return room
+    .find(FIND_DROPPED_RESOURCES)
+    .some((resource) => resource.resourceType === RESOURCE_ENERGY && resource.amount > 0);
+}

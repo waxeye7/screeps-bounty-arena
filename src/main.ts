@@ -1,6 +1,13 @@
-import { ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders } from './planning/spawn';
+import {
+  ensureBasicBuilders,
+  ensureBasicHarvesters,
+  ensureBasicUpgraders,
+  ensureContainerMiningEconomy,
+} from './planning/spawn';
 import { runBuilder } from './roles/builder';
 import { runHarvester } from './roles/harvester';
+import { runHauler } from './roles/hauler';
+import { runMiner } from './roles/miner';
 import { runUpgrader } from './roles/upgrader';
 
 export function loop(): void {
@@ -8,6 +15,7 @@ export function loop(): void {
 
   for (const spawn of Object.values(Game.spawns)) {
     ensureBasicHarvesters(spawn);
+    ensureContainerMiningEconomy(spawn);
     ensureBasicUpgraders(spawn);
     ensureBasicBuilders(spawn);
   }
@@ -16,6 +24,12 @@ export function loop(): void {
     switch (creep.memory.role) {
       case 'builder':
         runBuilder(creep);
+        break;
+      case 'hauler':
+        runHauler(creep);
+        break;
+      case 'miner':
+        runMiner(creep);
         break;
       case 'upgrader':
         runUpgrader(creep);
