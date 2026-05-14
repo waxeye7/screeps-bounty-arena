@@ -118,6 +118,16 @@ Use issues for PR-ready work. Use PRs for code. Use discussions for early ideas 
 
 See [docs/DISCUSSIONS.md](docs/DISCUSSIONS.md).
 
+## Private/test server quick start
+
+This repo now includes a safe, placeholder-first private server workflow.
+
+1. Copy `.screeps.example.json` to `.screeps.json` and fill in local values only.
+2. Set `SCREEPS_SERVER_URL`, `SCREEPS_USERNAME`, and `SCREEPS_TOKEN` in your shell or CI secrets.
+3. Run `npm run deploy:test-server` to prepare a sandbox deploy bundle, then `npm run server:status` to inspect the current simulation status.
+
+The generated bundle is for private/test-server verification only and does not include credentials.
+
 ## For agents
 
 Read [AGENTS.md](AGENTS.md) before opening PRs. Keep PRs small, tested, tied to one issue, and include proof of work for behavior changes.

@@ -1,42 +1,49 @@
 #!/usr/bin/env node
 
+import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
-const { values } = parseArgs({
-  options: {
-    ticks: { type: "string", short: "t", default: "1000" },
-    json: { type: "boolean", default: false },
-    markdown: { type: "boolean", default: false },
-    seed: { type: "string", default: "screeps-bounty-arena" },
-    "room-seed": { type: "string" },
-    "spawn-seed": { type: "string" },
-    "spawn-config": { type: "string", default: "balanced" },
-  },
-});
-
-const ticks = Number.parseInt(values.ticks, 10);
-if (!Number.isFinite(ticks) || ticks <= 0) {
-  throw new Error(`--ticks must be a positive integer, got ${values.ticks}`);
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
 }
 
-const result = runOfflineSimulation({
-  ticks,
-  seed: values.seed,
-  roomSeed: values["room-seed"],
-  spawnSeed: values["spawn-seed"],
-  spawnConfig: values["spawn-config"],
-});
+function main() {
+  const { values } = parseArgs({
+    options: {
+      ticks: { type: "string", short: "t", default: "1000" },
+      json: { type: "boolean", default: false },
+      markdown: { type: "boolean", default: false },
+      seed: { type: "string", default: "screeps-bounty-arena" },
+      "room-seed": { type: "string" },
+      "spawn-seed": { type: "string" },
+      "spawn-config": { type: "string", default: "balanced" },
+    },
+  });
 
-if (values.json && values.markdown) {
-  throw new Error("Use only one output mode: --json or --markdown");
-}
+  const ticks = Number.parseInt(values.ticks, 10);
+  if (!Number.isFinite(ticks) || ticks <= 0) {
+    throw new Error(`--ticks must be a positive integer, got ${values.ticks}`);
+  }
 
-if (values.json) {
-  console.log(JSON.stringify(result, null, 2));
-} else if (values.markdown) {
-  console.log(formatMarkdownReport(result));
-} else {
-  console.log(formatSummary(result));
+  const result = runOfflineSimulation({
+    ticks,
+    seed: values.seed,
+    roomSeed: values["room-seed"],
+    spawnSeed: values["spawn-seed"],
+    spawnConfig: values["spawn-config"],
+  });
+
+  if (values.json && values.markdown) {
+    throw new Error("Use only one output mode: --json or --markdown");
+  }
+
+  if (values.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else if (values.markdown) {
+    console.log(formatMarkdownReport(result));
+  } else {
+    console.log(formatSummary(result));
+  }
 }
 
 export function runOfflineSimulation({

@@ -38,7 +38,9 @@
     "test": "vitest run",
     "simulate": "node scripts/simulate.mjs",
     "simulate:1k": "node scripts/simulate.mjs --ticks 1000 --json",
-    "simulate:10k": "node scripts/simulate.mjs --ticks 10000 --json"
+    "simulate:10k": "node scripts/simulate.mjs --ticks 10000 --json",
+    "deploy:test-server": "node scripts/deploy-test-server.mjs",
+    "server:status": "node scripts/test-server-status.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",

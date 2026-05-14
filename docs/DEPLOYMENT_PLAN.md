@@ -54,13 +54,17 @@ Important constraints:
 - resettable world state
 - documented seed/config
 
-Potential implementation tasks:
+Implemented private/test-server tasks:
 
-- add a `deploy:test-server` script
-- add `.screeps.example.json`
-- document server URL/token env vars
-- add a script to print current room/RCL status
-- add a script to export proof logs
+- `npm run deploy:test-server` prepares a sandbox deploy bundle in `dist/main.js` without embedding credentials.
+- `.screeps.example.json` documents a local/private server shape and keeps real `.screeps.json` ignored.
+- `SCREEPS_SERVER_URL`, `SCREEPS_USERNAME`, `SCREEPS_TOKEN`, and `SCREEPS_BRANCH` are read from the environment.
+- `npm run server:status` prints the current private/test-server smoke status and deterministic RCL/tick progress.
+
+Still future work:
+
+- wire the generated bundle to the maintainer's preferred Screeps upload CLI/API
+- add a script to export private-server proof logs
 
 ## Phase 3 — staging account or staging branch
 

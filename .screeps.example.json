@@ -1,0 +1,16 @@
+{
+  "branch": "sandbox",
+  "ptr": false,
+  "server": {
+    "host": "127.0.0.1",
+    "port": 21025,
+    "http": true
+  },
+  "credentials": {
+    "email": "SCREEPS_USERNAME or local test username",
+    "token": "SCREEPS_TOKEN from your environment, never commit the real value"
+  },
+  "paths": {
+    "modules": "dist"
+  }
+}
