@@ -45,6 +45,7 @@
     "deploy:test-server": "node scripts/deploy-test-server.mjs",
     "server:status": "node scripts/test-server-status.mjs",
     "server:proof": "node scripts/local-server-proof.mjs",
+    "server:export-proof": "node scripts/export-proof-log.mjs",
     "server:local:up": "docker compose --env-file examples/local-screeps-server/.env -f examples/local-screeps-server/docker-compose.yml up -d",
     "server:local:ps": "docker compose --env-file examples/local-screeps-server/.env -f examples/local-screeps-server/docker-compose.yml ps",
     "server:local:logs": "docker compose --env-file examples/local-screeps-server/.env -f examples/local-screeps-server/docker-compose.yml logs --tail=120 screeps",
