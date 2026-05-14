@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
+import { sanitizeUrlForDisplay, buildRedactions, redact } from "./redaction.mjs";
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main(process.argv);
@@ -152,37 +153,4 @@ function clip(value, max = 12_000) {
   const text = String(value || "").trim();
   if (text.length <= max) return text;
   return `${text.slice(0, max)}\n... clipped ...`;
-}
-
-export function sanitizeUrlForDisplay(value) {
-  try {
-    const url = new URL(value);
-    url.username = "";
-    url.password = "";
-    return url.toString().replace(/\/$/, "");
-  } catch {
-    return "invalid SCREEPS_SERVER_URL";
-  }
-}
-
-export function buildRedactions(env) {
-  const values = [env.SCREEPS_TOKEN].filter(Boolean);
-  if (env.SCREEPS_SERVER_URL) {
-    try {
-      const url = new URL(env.SCREEPS_SERVER_URL);
-      if (url.username) values.push(url.username, decodeURIComponent(url.username));
-      if (url.password) values.push(url.password, decodeURIComponent(url.password));
-    } catch {
-      // Invalid URLs are represented generically in proof output.
-    }
-  }
-  return [...new Set(values.filter((value) => String(value).length > 0))];
-}
-
-function redact(value, redactions) {
-  let output = String(value || "");
-  for (const secret of redactions) {
-    output = output.split(String(secret)).join("[redacted]");
-  }
-  return output;
 }

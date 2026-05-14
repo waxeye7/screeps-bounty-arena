@@ -2,6 +2,7 @@
 
 import { parseArgs } from "node:util";
 import { runOfflineSimulation, formatMarkdownReport } from "./simulate.mjs";
+import { sanitizeUrlForDisplay, buildRedactions, redact } from "./redaction.mjs";
 
 const { values } = parseArgs({
   options: {
@@ -23,9 +24,10 @@ const result = runOfflineSimulation({
   spawnConfig: "balanced",
 });
 
+const redactions = buildRedactions(process.env);
 const status = {
   environment: "private/test-server smoke placeholder",
-  serverUrl: process.env.SCREEPS_SERVER_URL || "http://127.0.0.1:21025",
+  serverUrl: sanitizeUrlForDisplay(process.env.SCREEPS_SERVER_URL || "http://127.0.0.1:21025"),
   branch: process.env.SCREEPS_BRANCH || "sandbox",
   hasToken: Boolean(process.env.SCREEPS_TOKEN),
   simulation: result,
@@ -39,7 +41,7 @@ if (values.json) {
   console.log("Screeps private/test-server status smoke");
   console.log(`server: ${status.serverUrl}`);
   console.log(`branch: ${status.branch}`);
-  console.log(`token configured: ${status.hasToken ? "yes" : "no"}`);
+  console.log(`token configured: ${status.hasToken ? "yes (redacted)" : "no"}`);
   console.log(`ticks: ${result.ticks}`);
   console.log(`ok: ${result.ok}`);
   console.log(`final RCL: ${result.final.rcl}`);
