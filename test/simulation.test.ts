@@ -23,8 +23,8 @@ describe("offline simulation", () => {
 
     expect(result.ok).toBe(true);
     expect(result.ticks).toBe(1000);
-    expect(result.trustLevel).toBe('smoke');
-    expect(result.caveat).toContain('not a full Screeps engine');
+    expect(result.trustLevel).toBe("smoke");
+    expect(result.caveat).toContain("not a full Screeps engine");
     expect(result.seeds).toEqual({
       baseSeed: "test",
       roomSeed: "test:room",
@@ -35,15 +35,90 @@ describe("offline simulation", () => {
     expect(result.final.creeps).toBeGreaterThan(1);
     expect(result.final.energyCapacity).toBeGreaterThanOrEqual(300);
     expect(result.milestones.length).toBeGreaterThan(0);
-    expect(result.gates).toContainEqual({ name: 'max-failures', ok: true, expected: 0, actual: 0 });
+    expect(result.gates).toContainEqual({
+      name: "max-failures",
+      ok: true,
+      expected: 0,
+      actual: 0,
+    });
   });
 
-  it('fails with a non-zero exit code when an explicit RCL gate is missed', () => {
+  it("fails with a non-zero exit code when an explicit RCL gate is missed", () => {
     expect(() =>
-      execFileSync('node', ['scripts/simulate.mjs', '--ticks', '100', '--require-rcl', '8', '--json'], {
-        encoding: 'utf8',
-      }),
+      execFileSync(
+        "node",
+        [
+          "scripts/simulate.mjs",
+          "--ticks",
+          "100",
+          "--require-rcl",
+          "8",
+          "--json",
+        ],
+        {
+          encoding: "utf8",
+        },
+      ),
     ).toThrow();
+  });
+
+  it("lists named simulation fixtures", () => {
+    const output = execFileSync(
+      "node",
+      ["scripts/simulate.mjs", "--list-fixtures"],
+      {
+        encoding: "utf8",
+      },
+    );
+    const fixtures = JSON.parse(output) as Array<{
+      name: string;
+      description: string;
+    }>;
+
+    expect(fixtures.map((fixture) => fixture.name)).toEqual(
+      expect.arrayContaining([
+        "fresh-room-low-energy",
+        "spawn-recovery-no-workers",
+        "controller-rush-few-sources",
+        "road-planner-site-cap",
+      ]),
+    );
+    expect(fixtures.every((fixture) => fixture.description.length > 20)).toBe(
+      true,
+    );
+  });
+
+  it("runs a named bad-start recovery fixture", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "scripts/simulate.mjs",
+        "--fixture",
+        "spawn-recovery-no-workers",
+        "--ticks",
+        "1000",
+        "--require-rcl",
+        "2",
+        "--require-rcl-by",
+        "1000",
+        "--json",
+      ],
+      { encoding: "utf8" },
+    );
+    const result = JSON.parse(output) as {
+      ok: boolean;
+      seed: string;
+      fixture: { name: string; description: string };
+      seeds: { spawnConfig: string };
+      final: { creeps: number; rcl: number };
+    };
+
+    expect(result.ok).toBe(true);
+    expect(result.seed).toBe("fixture:spawn-recovery-no-workers");
+    expect(result.fixture.name).toBe("spawn-recovery-no-workers");
+    expect(result.seeds.spawnConfig).toBe("conservative");
+    expect(result.final.creeps).toBeGreaterThan(0);
+    expect(result.final.rcl).toBeGreaterThanOrEqual(2);
   });
 
   it("prints a paste-ready markdown report", () => {
@@ -64,6 +139,7 @@ describe("offline simulation", () => {
 
     expect(output).toContain("## Screeps Simulation Report");
     expect(output).toContain("| Room seed |");
+    expect(output).toContain("| Fixture |");
     expect(output).toContain("| Spawn seed |");
     expect(output).toContain("| Spawn config |");
     expect(output).toContain("Trust level: **smoke**");

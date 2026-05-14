@@ -29,6 +29,8 @@ Or pass custom options:
 node scripts/simulate.mjs --ticks 2500 --seed builder-role --json
 node scripts/simulate.mjs --ticks 2500 --seed builder-role --room-seed W8N3-alpha --spawn-seed spawn-a --spawn-config conservative --json
 node scripts/simulate.mjs --ticks 1000 --require-rcl 2 --require-rcl-by 1000 --json
+node scripts/simulate.mjs --list-fixtures
+node scripts/simulate.mjs --fixture spawn-recovery-no-workers --ticks 1000 --require-rcl 2 --require-rcl-by 1000 --markdown
 ```
 
 `--seed` is the base run seed. When explicit values are not provided, the simulator derives `roomSeed` as `<seed>:room` and `spawnSeed` as `<seed>:spawn`.
@@ -36,6 +38,30 @@ node scripts/simulate.mjs --ticks 1000 --require-rcl 2 --require-rcl-by 1000 --j
 Use `--room-seed` for room/harvest randomness and `--spawn-seed` plus `--spawn-config` (`conservative`, `balanced`, or `aggressive`) for reproducible spawn-cost choices. JSON output includes all of these fields under `seeds` so a reviewer can replay the same setup.
 
 Use `--require-rcl` and `--require-rcl-by` to turn simulation claims into pass/fail gates. Failed gates exit non-zero, which lets CI catch regressions.
+
+## Named fixtures
+
+Named fixtures provide reusable bad-start and recovery scenarios for agents and maintainers. List them with:
+
+```bash
+node scripts/simulate.mjs --list-fixtures
+```
+
+Current fixtures:
+
+- `fresh-room-low-energy` — fresh RCL1 room with one worker and low starting energy; useful for checking early economy recovery.
+- `spawn-recovery-no-workers` — zero active workers but enough emergency energy to spawn; useful for validating bootstrap recovery from a wiped worker pool.
+- `controller-rush-few-sources` — constrained-income controller rush; useful for checking early RCL progress with fewer source-equivalent harvest opportunities.
+- `road-planner-site-cap` — RCL2 room with construction progress near capacity; useful for smoke-testing build/capacity behavior under road-planning pressure.
+
+Run a fixture by name:
+
+```bash
+node scripts/simulate.mjs --fixture fresh-room-low-energy --ticks 1000 --json
+node scripts/simulate.mjs --fixture spawn-recovery-no-workers --ticks 1000 --require-rcl 2 --require-rcl-by 1000 --markdown
+```
+
+Fixture defaults set deterministic seeds and a spawn profile, but explicit CLI options such as `--room-seed`, `--spawn-seed`, and gates can still be provided for replay or stricter proof.
 
 ## Seeded CI smoke
 
@@ -67,25 +93,27 @@ Example output:
 
 > Trust level: **smoke**. Deterministic approximation only; not a full Screeps engine or private-server proof.
 
-| Metric | Value |
-| --- | --- |
-| Ticks | 1000 |
-| Seed | `screeps-bounty-arena` |
-| Room seed | `screeps-bounty-arena:room` |
-| Spawn seed | `screeps-bounty-arena:spawn` |
-| Spawn config | `balanced` |
-| Model | `offline-smoke-v1` |
-| OK | yes |
-| Final RCL | 7 |
-| Energy capacity | 1000 |
-| Creep count | 2 |
-| Failures | 0 |
+| Metric          | Value                        |
+| --------------- | ---------------------------- |
+| Ticks           | 1000                         |
+| Seed            | `screeps-bounty-arena`       |
+| Room seed       | `screeps-bounty-arena:room`  |
+| Spawn seed      | `screeps-bounty-arena:spawn` |
+| Spawn config    | `balanced`                   |
+| Model           | `offline-smoke-v1`           |
+| OK              | yes                          |
+| Final RCL       | 7                            |
+| Energy capacity | 1000                         |
+| Creep count     | 2                            |
+| Failures        | 0                            |
 
 ### Gates
+
 - PASS max-failures: expected 0, actual 0.
 - PASS required-rcl: expected RCL 2 by tick 1000, actual tick 13.
 
 ### Milestones
+
 - Tick 13: reached RCL 2 with 2 creeps and 400 energy capacity.
 ```
 

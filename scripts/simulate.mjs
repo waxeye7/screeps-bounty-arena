@@ -2,6 +2,10 @@
 
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import {
+  getSimulationFixture,
+  listSimulationFixtures,
+} from "./simulation-fixtures.mjs";
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
@@ -14,6 +18,8 @@ function main() {
       json: { type: "boolean", default: false },
       markdown: { type: "boolean", default: false },
       seed: { type: "string", default: "screeps-bounty-arena" },
+      fixture: { type: "string" },
+      "list-fixtures": { type: "boolean", default: false },
       "room-seed": { type: "string" },
       "spawn-seed": { type: "string" },
       "spawn-config": { type: "string", default: "balanced" },
@@ -24,6 +30,11 @@ function main() {
   });
 
   const ticks = Number.parseInt(values.ticks, 10);
+  if (values["list-fixtures"]) {
+    console.log(JSON.stringify(listSimulationFixtures(), null, 2));
+    return;
+  }
+
   if (!Number.isFinite(ticks) || ticks <= 0) {
     throw new Error(`--ticks must be a positive integer, got ${values.ticks}`);
   }
@@ -37,6 +48,7 @@ function main() {
   const result = runOfflineSimulation({
     ticks,
     seed: values.seed,
+    fixtureName: values.fixture,
     roomSeed: values["room-seed"],
     spawnSeed: values["spawn-seed"],
     spawnConfig: values["spawn-config"],
@@ -63,29 +75,38 @@ function main() {
 export function runOfflineSimulation({
   ticks,
   seed = "screeps-bounty-arena",
+  fixtureName,
   roomSeed,
   spawnSeed,
   spawnConfig = "balanced",
   gates = {},
 }) {
+  const fixture = fixtureName ? getSimulationFixture(fixtureName) : undefined;
+  if (fixtureName && fixture === undefined) {
+    throw new Error(
+      `Unknown fixture '${fixtureName}'. Use --list-fixtures to inspect available fixtures.`,
+    );
+  }
+
   const seeds = normalizeSimulationSeeds({
-    seed,
-    roomSeed,
-    spawnSeed,
-    spawnConfig,
+    seed: fixture?.seed ?? seed,
+    roomSeed: roomSeed ?? fixture?.roomSeed,
+    spawnSeed: spawnSeed ?? fixture?.spawnSeed,
+    spawnConfig: fixture?.spawnConfig ?? spawnConfig,
   });
   const roomRng = mulberry32(hashSeed(seeds.roomSeed));
   const spawnRng = mulberry32(
     hashSeed(`${seeds.spawnSeed}:${seeds.spawnConfig}`),
   );
+  const initialRoom = fixture?.initialRoom ?? {};
   const room = {
     tick: 0,
-    rcl: 1,
-    controllerProgress: 0,
-    energy: 300,
-    energyCapacity: 300,
-    creeps: 1,
-    constructionProgress: 0,
+    rcl: initialRoom.rcl ?? 1,
+    controllerProgress: initialRoom.controllerProgress ?? 0,
+    energy: initialRoom.energy ?? 300,
+    energyCapacity: initialRoom.energyCapacity ?? 300,
+    creeps: initialRoom.creeps ?? 1,
+    constructionProgress: initialRoom.constructionProgress ?? 0,
     failures: [],
   };
 
@@ -93,7 +114,11 @@ export function runOfflineSimulation({
   for (let tick = 1; tick <= ticks; tick += 1) {
     room.tick = tick;
 
-    const harvestRate = room.creeps * (8 + Math.floor(roomRng() * 3));
+    const harvestRate = Math.floor(
+      room.creeps *
+        (8 + Math.floor(roomRng() * 3)) *
+        (fixture?.harvestMultiplier ?? 1),
+    );
     const upkeep = Math.max(0, room.creeps - 2) * 2;
     room.energy = Math.min(
       room.energyCapacity,
@@ -157,7 +182,14 @@ export function runOfflineSimulation({
   return {
     ok: room.failures.length === 0 && gateResults.every((gate) => gate.ok),
     ticks,
-    seed,
+    seed: seeds.baseSeed,
+    fixture:
+      fixture === undefined
+        ? undefined
+        : {
+            name: fixture.name,
+            description: fixture.description,
+          },
     seeds,
     simulationModel: "offline-smoke-v1",
     trustLevel: "smoke",
@@ -234,7 +266,9 @@ function evaluateGates({ gates, ticks, finalRcl, failures, milestones }) {
       ok: reachedByTick !== undefined && reachedByTick <= byLimit,
       expected: `RCL ${gates.requireRcl} by tick ${byLimit}`,
       actual:
-        reachedByTick === undefined ? `final RCL ${finalRcl}` : `tick ${reachedByTick}`,
+        reachedByTick === undefined
+          ? `final RCL ${finalRcl}`
+          : `tick ${reachedByTick}`,
       targetRcl: gates.requireRcl,
       byTick: byLimit,
       reachedTick: reachedByTick,
@@ -288,6 +322,7 @@ export function formatMarkdownReport(result) {
     `| --- | --- |`,
     `| Ticks | ${result.ticks} |`,
     `| Seed | \`${result.seed}\` |`,
+    `| Fixture | ${result.fixture ? `\`${result.fixture.name}\`` : "none"} |`,
     `| Room seed | \`${result.seeds.roomSeed}\` |`,
     `| Spawn seed | \`${result.seeds.spawnSeed}\` |`,
     `| Spawn config | \`${result.seeds.spawnConfig}\` |`,
@@ -342,6 +377,7 @@ function formatSummary(result) {
     `caveat: ${result.caveat}`,
     `ticks: ${result.ticks}`,
     `seed: ${result.seed}`,
+    `fixture: ${result.fixture?.name ?? "none"}`,
     `room seed: ${result.seeds.roomSeed}`,
     `spawn seed: ${result.seeds.spawnSeed}`,
     `spawn config: ${result.seeds.spawnConfig}`,
