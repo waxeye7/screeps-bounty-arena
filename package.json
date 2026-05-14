@@ -52,7 +52,8 @@
     "server:local:down": "docker compose --env-file examples/local-screeps-server/.env -f examples/local-screeps-server/docker-compose.yml down",
     "server:local:reset": "docker compose --env-file examples/local-screeps-server/.env -f examples/local-screeps-server/docker-compose.yml down -v",
     "simulate:seeded": "node scripts/simulate-seeded.mjs --runs 3 --ticks 3000 --require-rcl 3 --require-rcl-by 3000",
-    "simulate:seeded:markdown": "node scripts/simulate-seeded.mjs --runs 3 --ticks 3000 --require-rcl 3 --require-rcl-by 3000 --markdown"
+    "simulate:seeded:markdown": "node scripts/simulate-seeded.mjs --runs 3 --ticks 3000 --require-rcl 3 --require-rcl-by 3000 --markdown",
+    "simulate:fixtures": "node scripts/simulate-fixtures.mjs"
   },
   "devDependencies": {
     "@types/node": "latest",
