@@ -2,25 +2,64 @@
 
 A bounty-friendly **Screeps AI bot** repository designed for humans and coding agents to open focused pull requests.
 
-This repo is intentionally easy to find when bots search for:
+## What is this?
 
-- Screeps AI
-- Screeps bot
-- Screeps bounty / bounties
-- coding agent PR tasks
-- AI agent game automation
-- MMO programming game bots
-- colony AI / creep AI
+Screeps Bounty Arena is a challenge-based open source project where contributors improve a Screeps AI bot through small, reviewable pull requests. Each challenge has clear acceptance criteria, verification commands, and proof requirements.
 
-## Goal
+**Important:** Challenge bounties are **not cash rewards** unless a specific issue explicitly says so. They are PR-ready tasks with clear scope for recognition and learning.
 
-Build a clean, modular Screeps codebase where agents can improve one behavior at a time: harvesting, spawning, upgrading, building, repairing, defending, scouting, pathing, and economy planning.
+## Challenge Format
 
-The repo is structured to attract useful PRs rather than vague drive-by changes.
+### How it works
 
-## Agent/bounty keywords
+1. **Find a challenge** — Browse [open bounty issues](../../issues?q=is%3Aopen+label%3Abounty)
+2. **Read acceptance criteria** — Each issue lists specific goals and verification steps
+3. **Submit a PR** — Keep changes small, tested, and tied to one issue
+4. **Include proof** — Add video/GIF, simulation output, or replay logs for behavior changes
+5. **Get reviewed** — Maintainers verify and merge qualifying PRs
 
-`Screeps`, `Screeps AI`, `Screeps bot`, `Screeps World`, `Screeps Arena`, `AI agent`, `coding agent`, `bounty`, `bounties`, `agent bounty`, `pull request`, `TypeScript`, `game AI`, `colony AI`, `creep AI`, `automation`.
+### Challenge points
+
+Issues carry suggested point values to estimate scope:
+
+| Points | Scope |
+|--------|-------|
+| `points:1` | Small docs, checklist, or test improvement |
+| `points:2` | Focused role/planner change with tests |
+| `points:3` | Multi-file behavior with simulation proof |
+| `points:5` | RCL milestone, video/replay proof, or CI automation |
+
+Points are for fun and triage. They are **not money**.
+
+### Difficulty tiers
+
+| Tier | Description |
+|------|-------------|
+| `tier:small` | One focused behavior, doc, test, or fixture improvement |
+| `tier:medium` | One complete role/planner feature with tests |
+| `tier:large` | Multi-file gameplay system, simulation gate, or RCL milestone work |
+
+## Documentation
+
+### Challenge system
+
+- [Bounty Board](docs/BOUNTY_BOARD.md) — How bounty issues work and what makes a good submission
+- [Challenge Board](docs/CHALLENGE_BOARD.md) — Challenge format, points, and showcase criteria
+- [Points](docs/POINTS.md) — Point values, award rules, and contributor ledger
+- [Leaderboard](docs/LEADERBOARD.md) — Merged challenge PRs showcase
+
+### Proof and verification
+
+- [Proof of Work](docs/PROOF_OF_WORK.md) — What evidence to include with bounty PRs
+- [Proof Artifact Template](docs/PROOF_ARTIFACT_TEMPLATE.md) — Reusable template for PR proof blocks
+- [Simulation](docs/SIMULATION.md) — Offline simulation commands and reporting
+
+### Contributing
+
+- [AGENTS.md](AGENTS.md) — Instructions for coding agents opening PRs
+- [CONTRIBUTING.md](CONTRIBUTING.md) — General contribution guidelines
+- [MAINTAINING.md](MAINTAINING.md) — Maintainer workflow and merge policy
+- [PR Triage](docs/PR_TRIAGE.md) — Triage categories and review responses
 
 ## Quick start
 
@@ -30,7 +69,7 @@ npm run check
 npm test
 ```
 
-## Project shape
+## Project structure
 
 ```text
 src/
@@ -64,18 +103,9 @@ npm run simulate:10k
 
 See [docs/SIMULATION.md](docs/SIMULATION.md) for what it tracks and how agents should report results.
 
-## Challenge bounties
+## Good issues for bots
 
-This repo uses **challenge bounties**: clear PR tasks that are fun for humans and coding agents to attempt. They are not cash rewards unless an individual issue explicitly says so.
-
-See:
-
-- [docs/BOUNTY_BOARD.md](docs/BOUNTY_BOARD.md)
-- [docs/CHALLENGE_BOARD.md](docs/CHALLENGE_BOARD.md)
-- [docs/POINTS.md](docs/POINTS.md)
-- [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
-
-Good issues for bots should include:
+Each bounty issue should include:
 
 1. a small goal
 2. likely files
@@ -88,14 +118,6 @@ Good issues for bots should include:
 Example:
 
 > Add a `builder` role that builds construction sites after energy sources are serviced. Verify with `npm run check` and a unit test for role selection.
-
-## Suggested GitHub topics
-
-Add these topics after publishing:
-
-```text
-screeps screeps-ai screeps-bot screeps-world screeps-arena ai-agent coding-agent bounty bounties agent-bounties typescript game-ai colony-ai creep-ai automation pull-requests
-```
 
 ## Proof of work
 
@@ -118,10 +140,6 @@ Use issues for PR-ready work. Use PRs for code. Use discussions for early ideas 
 
 See [docs/DISCUSSIONS.md](docs/DISCUSSIONS.md).
 
-## For agents
-
-Read [AGENTS.md](AGENTS.md) before opening PRs. Keep PRs small, tested, tied to one issue, and include proof of work for behavior changes.
-
 ## Review workflow
 
 Maintainers and contributors should use the repo's safe review notes before reviewing or requesting merges:
@@ -137,9 +155,13 @@ Concise review checklist:
 - Run `npm run check` and `npm test`; add simulation proof when gameplay or economy behavior changes.
 - Decide clearly: merge, request changes, close duplicate, or defer.
 
-## Contributing
+## Suggested GitHub topics
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Add these topics after publishing:
+
+```text
+screeps screeps-ai screeps-bot screeps-world screeps-arena ai-agent coding-agent bounty bounties agent-bounties typescript game-ai colony-ai creep-ai automation pull-requests
+```
 
 ## Security
 
