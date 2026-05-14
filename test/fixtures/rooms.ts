@@ -18,8 +18,9 @@ export interface MockRoomOptions {
 
 export interface MockCreepOptions {
   name: string;
-  role: CreepRole;
+  role?: CreepRole;
   room: Room;
+  memory?: unknown;
   energyUsed?: number;
   freeCapacity?: number;
   calls?: string[];
@@ -117,11 +118,14 @@ export function mockRoomFixture(options: MockRoomOptions = {}): MockRoomFixture 
   return { room, spawn, createCalls, spawnCalls };
 }
 
-export function mockCreep({ name, role, room, energyUsed = 0, freeCapacity = 50, calls = [] }: MockCreepOptions): Creep {
+export function mockCreep(options: MockCreepOptions): Creep {
+  const { name, role = 'harvester', room, energyUsed = 0, freeCapacity = 50, calls = [] } = options;
+  const memory = Object.hasOwn(options, 'memory') ? options.memory : { role };
+
   return {
     id: name,
     name,
-    memory: { role },
+    memory,
     room,
     pos: mockPos(12, 12, room.name),
     hits: 100,

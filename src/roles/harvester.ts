@@ -1,3 +1,5 @@
+import { normalizeCreepMemory } from '../memory';
+
 export function runHarvester(creep: Creep): void {
   const source = chooseSource(creep);
   if (!source) {
@@ -19,18 +21,19 @@ export function runHarvester(creep: Creep): void {
 }
 
 export function chooseSource(creep: Creep): Source | undefined {
+  const memory = normalizeCreepMemory(creep);
   const sources = Object.values(Game.spawns)[0]?.room.find(FIND_SOURCES) ?? [];
   if (sources.length === 0) return undefined;
 
-  if (creep.memory.sourceId) {
-    const remembered = sources.find((source) => source.id === creep.memory.sourceId);
+  if (memory.sourceId) {
+    const remembered = sources.find((source) => source.id === memory.sourceId);
     if (remembered) return remembered;
   }
 
   const assignmentCounts = new Map(sources.map((source) => [source.id, 0]));
   for (const otherCreep of Object.values(Game.creeps)) {
     if (otherCreep.name === creep.name) continue;
-    const sourceId = otherCreep.memory.sourceId;
+    const sourceId = normalizeCreepMemory(otherCreep).sourceId;
     if (sourceId && assignmentCounts.has(sourceId)) {
       assignmentCounts.set(sourceId, (assignmentCounts.get(sourceId) ?? 0) + 1);
     }
@@ -42,6 +45,6 @@ export function chooseSource(creep: Creep): Source | undefined {
     return sourceCount < bestCount ? source : bestSource;
   });
 
-  creep.memory.sourceId = selected.id;
+  memory.sourceId = selected.id;
   return selected;
 }

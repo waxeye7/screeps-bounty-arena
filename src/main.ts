@@ -15,11 +15,12 @@ import { runHarvester } from './roles/harvester';
 import { runMiner } from './roles/miner';
 import { runRepairer } from './roles/repairer';
 import { runUpgrader } from './roles/upgrader';
-import { cleanupDeadCreeps, migrateRoomMemory } from './memory';
+import { cleanupDeadCreeps, creepRole, migrateRoomMemory, normalizeGameCreepMemory } from './memory';
 
 export function loop(): void {
   cleanupDeadCreeps();
   migrateRoomMemory();
+  normalizeGameCreepMemory();
 
   const rooms = new Set<Room>();
 
@@ -40,7 +41,7 @@ export function loop(): void {
   }
 
   for (const creep of Object.values(Game.creeps)) {
-    switch (creep.memory.role) {
+    switch (creepRole(creep)) {
       case 'builder':
         runBuilder(creep);
         break;
