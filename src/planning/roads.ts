@@ -1,6 +1,7 @@
 const DEFAULT_MAX_NEW_ROAD_SITES = 5;
 const ROOM_EDGE_MIN = 1;
 const ROOM_EDGE_MAX = 48;
+const DEFAULT_MAX_REASONABLE_ROAD_COST = 1500;
 
 interface RoadPoint {
   x: number;
@@ -18,6 +19,31 @@ export interface RoadPlanSummary {
 
 export interface RoadPlanOptions {
   maxNewSites?: number;
+}
+
+export interface RoadCleanupOptions {
+  maxProgressTotal?: number;
+}
+
+export function removeExpensiveRoadConstructionSites(
+  room: Room,
+  options: RoadCleanupOptions = {},
+): number {
+  const maxProgressTotal =
+    options.maxProgressTotal ?? DEFAULT_MAX_REASONABLE_ROAD_COST;
+  let removed = 0;
+
+  for (const site of room.find(FIND_CONSTRUCTION_SITES)) {
+    if (site.structureType !== STRUCTURE_ROAD) continue;
+    if (!isExpensiveRoadConstructionSite(site, maxProgressTotal)) continue;
+    if (typeof site.remove !== 'function') continue;
+
+    if (site.remove() === 0) {
+      removed += 1;
+    }
+  }
+
+  return removed;
 }
 
 export function planEarlyRoads(
@@ -81,6 +107,18 @@ export function planEarlyRoads(
   }
 
   return summary;
+}
+
+function isExpensiveRoadConstructionSite(
+  site: ConstructionSite,
+  maxProgressTotal: number,
+): boolean {
+  const progressTotal = site.progressTotal ?? site.total;
+  return (
+    typeof progressTotal === 'number' &&
+    Number.isFinite(progressTotal) &&
+    progressTotal > maxProgressTotal
+  );
 }
 
 export function roadPath(start: RoomPosition, end: RoomPosition): RoadPoint[] {

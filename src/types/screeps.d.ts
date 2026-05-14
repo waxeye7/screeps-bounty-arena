@@ -81,7 +81,9 @@ declare global {
     my?: boolean;
     structureType?: string;
     progress?: number;
+    progressTotal?: number;
     total?: number;
+    remove?: () => number;
   }
 
   interface Store {

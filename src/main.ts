@@ -8,7 +8,7 @@ import {
   ensureEmergencyRecovery,
 } from './planning/spawn';
 import { planRcl2Extensions } from './planning/extensions';
-import { planEarlyRoads } from './planning/roads';
+import { removeExpensiveRoadConstructionSites } from './planning/roads';
 import { runBuilder } from './roles/builder';
 import { runHauler } from './roles/hauler';
 import { runHarvester } from './roles/harvester';
@@ -30,12 +30,12 @@ export function loop(): void {
     ensureContainerMiningEconomy(spawn);
     ensureBasicUpgraders(spawn);
     planRcl2Extensions(spawn.room);
-    planEarlyRoads(spawn.room);
     ensureBasicBuilders(spawn);
     ensureBasicRepairers(spawn);
   }
 
   for (const room of rooms) {
+    removeExpensiveRoadConstructionSites(room);
     runTowerDefense(room);
   }
 

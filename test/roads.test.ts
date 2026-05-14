@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { planEarlyRoads, roadPath } from '../src/planning/roads';
+import {
+  planEarlyRoads,
+  removeExpensiveRoadConstructionSites,
+  roadPath,
+} from '../src/planning/roads';
 
 function pos(x: number, y: number, roomName = 'W1N1'): RoomPosition {
   return {
@@ -160,5 +164,57 @@ describe('early road planner', () => {
       { x: 12, y: 10, roomName: 'W1N1' },
       { x: 13, y: 11, roomName: 'W1N1' },
     ]);
+  });
+
+  it('removes expensive tunnel road construction sites without touching normal road sites', () => {
+    const removed: string[] = [];
+    const spawn = makeSpawn();
+    const plainRoad = {
+      id: 'plain-road',
+      pos: pos(11, 10),
+      structureType: STRUCTURE_ROAD,
+      progressTotal: 300,
+      remove: () => {
+        removed.push('plain-road');
+        return 0;
+      },
+    } as ConstructionSite;
+    const swampRoad = {
+      id: 'swamp-road',
+      pos: pos(12, 10),
+      structureType: STRUCTURE_ROAD,
+      progressTotal: 1500,
+      remove: () => {
+        removed.push('swamp-road');
+        return 0;
+      },
+    } as ConstructionSite;
+    const tunnelRoad = {
+      id: 'tunnel-road',
+      pos: pos(13, 10),
+      structureType: STRUCTURE_ROAD,
+      progressTotal: 45_000,
+      remove: () => {
+        removed.push('tunnel-road');
+        return 0;
+      },
+    } as ConstructionSite;
+    const extensionSite = {
+      id: 'extension-site',
+      pos: pos(14, 10),
+      structureType: STRUCTURE_EXTENSION,
+      progressTotal: 3000,
+      remove: () => {
+        removed.push('extension-site');
+        return 0;
+      },
+    } as ConstructionSite;
+    const room = makeRoom({
+      spawn,
+      constructionSites: [plainRoad, swampRoad, tunnelRoad, extensionSite],
+    });
+
+    expect(removeExpensiveRoadConstructionSites(room)).toBe(1);
+    expect(removed).toEqual(['tunnel-road']);
   });
 });
