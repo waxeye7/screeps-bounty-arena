@@ -1,3 +1,4 @@
+import { planRoads } from './planning/roads';
 import { runTowerDefense } from './defense/towers';
 import {
   ensureBasicBuilders,
@@ -29,9 +30,14 @@ export function loop(): void {
     ensureBasicRepairers(spawn);
   }
 
+
   for (const room of rooms) {
     runTowerDefense(room);
+    if (Game.time % 100 === 0) {
+      planRoads(room);
+    }
   }
+
 
   for (const creep of Object.values(Game.creeps)) {
     switch (creep.memory.role) {
