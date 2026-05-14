@@ -47,8 +47,7 @@ Bug-hunt point guide:
 - `points:21` — bug report, regression test, fix, and verification output
 
 ## Proof of work
-
-- Proof level: unit / offline-smoke / private-server / replay-log / GitHub-attached clip
+- Proof level: unit / offline-smoke / private-server / video-replay / staging
 - Simulation report, including seed(s):
 - Replay/private-server log:
 - Target RCL / tick count:

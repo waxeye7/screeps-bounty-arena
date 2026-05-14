@@ -17,6 +17,16 @@ It is a deterministic smoke model. It checks that a PR does not obviously break 
 
 Current CI reaches **Level 2**. RCL milestone claims should aim for **Level 3** or better.
 
+When filling out PR proof, use these labels consistently:
+
+- `unit` for Level 1 test-only evidence
+- `offline-smoke` for Level 2 simulator evidence
+- `private-server` for Level 3 resettable server evidence
+- `video-replay` for GitHub-attached clips, GIFs, or replay logs that show the milestone
+- `staging` for Level 4 controlled live-ish validation
+
+Do not describe `simulate:1k`, `simulate:10k`, or seeded simulator output as live Screeps proof. They are offline-smoke checks unless paired with private-server, video/replay, or staging evidence.
+
 ## What the offline simulator models
 
 The simulator currently models:
