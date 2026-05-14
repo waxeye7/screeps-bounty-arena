@@ -40,7 +40,7 @@ describe("private test-server workflow", () => {
     ).toThrow(/SCREEPS_TOKEN/);
   });
 
-  it("prints a status smoke report", () => {
+  it("prints a status report with offline fallback data", () => {
     const output = execFileSync("node", ["scripts/test-server-status.mjs"], {
       encoding: "utf8",
       env: {
@@ -50,11 +50,58 @@ describe("private test-server workflow", () => {
       },
     });
 
-    expect(output).toContain("Screeps private/test-server status smoke");
+    expect(output).toContain("Screeps private/test-server status");
     expect(output).toContain("server: http://localhost:21025");
+    expect(output).toContain("reachable:");
     expect(output).toContain("branch: agent-sandbox");
-    expect(output).toContain("final RCL:");
-    expect(output).toContain("failures: 0");
+    expect(output).toContain("offline final RCL:");
+    expect(output).toContain("offline failures: 0");
+  });
+
+  it("reports unreachable servers clearly in JSON mode", () => {
+    const output = execFileSync(
+      "node",
+      ["scripts/test-server-status.mjs", "--json", "--timeout-ms", "200"],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          SCREEPS_SERVER_URL: "http://127.0.0.1:1",
+          SCREEPS_BRANCH: "agent-sandbox",
+        },
+      },
+    );
+
+    const status = JSON.parse(output);
+    expect(status.reachable).toBe(false);
+    expect(status.fallback).toContain("server/API unavailable");
+    expect(status.probes.some((probe: { ok: boolean }) => !probe.ok)).toBe(true);
+    expect(status.simulation.final.rcl).toBeGreaterThanOrEqual(1);
+  });
+
+  it("redacts tokens from private-server status output", () => {
+    const token = "super-secret-status-token";
+    const output = execFileSync(
+      "node",
+      ["scripts/test-server-status.mjs", "--json", "--timeout-ms", "200"],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          SCREEPS_SERVER_URL: `http://agent-user:${token}@127.0.0.1:1`,
+          SCREEPS_BRANCH: "agent-sandbox",
+          SCREEPS_USERNAME: "agent-user",
+          SCREEPS_TOKEN: token,
+        },
+      },
+    );
+
+    expect(output).not.toContain(token);
+    const status = JSON.parse(output);
+    expect(status.serverUrl).toContain("redacted");
+    expect(status.user).toBe("agent-user");
+    expect(status.tokenConfigured).toBe(true);
+    expect(status.probes.some((probe: { reason?: string }) => probe.reason === "token not configured")).toBe(false);
   });
 
   it("generates a local-server proof block without leaking tokens", () => {
