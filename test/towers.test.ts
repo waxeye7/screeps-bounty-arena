@@ -25,9 +25,10 @@ function structure(id: string, structureType: string, hits: number, hitsMax: num
   return { id, structureType, hits, hitsMax, pos: { isNearTo: () => true } } as Structure;
 }
 
-function tower(id: string): StructureTower {
+function tower(id: string, energy = 100): StructureTower {
   return {
     ...structure(id, STRUCTURE_TOWER, 3000, 3000),
+    store: { getFreeCapacity: () => 1000 - energy, getUsedCapacity: () => energy },
     attack: vi.fn(() => 0),
     heal: vi.fn(() => 0),
     repair: vi.fn(() => 0),
@@ -96,5 +97,18 @@ describe('tower defense', () => {
     expect(defenseTower.attack).toHaveBeenCalledWith(hostile);
     expect(defenseTower.heal).not.toHaveBeenCalled();
     expect(defenseTower.repair).not.toHaveBeenCalled();
+  });
+
+  it('skips empty towers instead of attempting tower actions', () => {
+    const emptyTower = tower('tower1', 0);
+    const hostile = creep('Invader', 100, 100, [ATTACK]);
+    const wounded = creep('Harvester', 40, 100);
+    const road = structure('road1', 'road', 300, 5000);
+
+    runTowerDefense(room({ hostiles: [hostile], creeps: [wounded], structures: [emptyTower, road] }));
+
+    expect(emptyTower.attack).not.toHaveBeenCalled();
+    expect(emptyTower.heal).not.toHaveBeenCalled();
+    expect(emptyTower.repair).not.toHaveBeenCalled();
   });
 });

@@ -2,6 +2,8 @@ export function runTowerDefense(room: Room): void {
   const towers = room.find(FIND_MY_STRUCTURES).filter(isTower);
 
   for (const tower of towers) {
+    if (!towerHasEnergy(tower)) continue;
+
     const hostile = chooseTowerHostileTarget(room);
     if (hostile) {
       tower.attack(hostile);
@@ -68,4 +70,8 @@ function shouldTowerRepair(structure: Structure): boolean {
 
 function isTower(structure: Structure): structure is StructureTower {
   return structure.structureType === STRUCTURE_TOWER;
+}
+
+function towerHasEnergy(tower: StructureTower): boolean {
+  return tower.store.getUsedCapacity(RESOURCE_ENERGY) > 0;
 }

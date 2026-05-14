@@ -150,7 +150,7 @@ declare global {
     structureType: typeof STRUCTURE_EXTENSION;
   }
 
-  interface StructureTower extends Structure {
+  interface StructureTower extends EnergyStructure {
     structureType: typeof STRUCTURE_TOWER;
     attack(target: Creep): number;
     heal(target: Creep): number;
