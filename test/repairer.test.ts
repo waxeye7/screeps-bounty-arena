@@ -43,15 +43,22 @@ function room({ structures = [], sources = [] }: { structures?: Structure[]; sou
 describe('repairer role', () => {
   it('prioritizes damaged roads and containers before general structures', () => {
     const extension = structure('extension1', 'extension', 100, 1000);
-    const road = structure('road1', 'road', 1400, 5000);
+    const road = structure('road1', STRUCTURE_ROAD, 1400, 5000);
     const container = structure('container1', 'container', 1200, 2000);
 
     expect(chooseRepairTarget(room({ structures: [extension, container, road] }))?.id).toBe('road1');
   });
 
+  it('keeps roads in the maintenance queue before same-level general repairs', () => {
+    const road = structure('road1', STRUCTURE_ROAD, 3000, 5000);
+    const extension = structure('extension1', STRUCTURE_EXTENSION, 600, 1000);
+
+    expect(chooseRepairTarget(room({ structures: [extension, road] }))?.id).toBe('road1');
+  });
+
   it('uses hit ratio as a tie breaker within the same priority', () => {
-    const healthierRoad = structure('road1', 'road', 3000, 5000);
-    const weakerRoad = structure('road2', 'road', 1000, 5000);
+    const healthierRoad = structure('road1', STRUCTURE_ROAD, 3000, 5000);
+    const weakerRoad = structure('road2', STRUCTURE_ROAD, 1000, 5000);
 
     expect(chooseRepairTarget(room({ structures: [healthierRoad, weakerRoad] }))?.id).toBe('road2');
   });
@@ -67,7 +74,7 @@ describe('repairer role', () => {
   });
 
   it('repairs the selected target when carrying energy', () => {
-    const road = structure('road1', 'road', 1000, 5000);
+    const road = structure('road1', STRUCTURE_ROAD, 1000, 5000);
     const worker = creep({ energy: 50, room: room({ structures: [road] }) });
 
     runRepairer(worker);

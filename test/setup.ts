@@ -16,6 +16,7 @@ globalThis.FIND_DROPPED_RESOURCES = 109;
 globalThis.STRUCTURE_SPAWN = 'spawn';
 globalThis.STRUCTURE_EXTENSION = 'extension';
 globalThis.STRUCTURE_CONTAINER = 'container';
+globalThis.STRUCTURE_ROAD = 'road';
 globalThis.STRUCTURE_TOWER = 'tower';
 globalThis.STRUCTURE_WALL = 'constructedWall';
 globalThis.STRUCTURE_RAMPART = 'rampart';

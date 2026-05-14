@@ -19,6 +19,7 @@ declare global {
   var STRUCTURE_SPAWN: 'spawn';
   var STRUCTURE_EXTENSION: 'extension';
   var STRUCTURE_CONTAINER: 'container';
+  var STRUCTURE_ROAD: 'road';
   var STRUCTURE_TOWER: 'tower';
   var STRUCTURE_WALL: 'constructedWall';
   var STRUCTURE_RAMPART: 'rampart';
@@ -55,6 +56,9 @@ declare global {
   }
 
   interface RoomPosition {
+    x?: number;
+    y?: number;
+    roomName?: string;
     isNearTo(target: RoomObject): boolean;
   }
 
@@ -114,6 +118,7 @@ declare global {
     find(type: typeof FIND_STRUCTURES): Structure[];
     find(type: typeof FIND_DROPPED_RESOURCES): Resource<ResourceConstant>[];
     find(type: typeof FIND_CONSTRUCTION_SITES): ConstructionSite[];
+    createConstructionSite(x: number, y: number, structureType: string): number;
   }
 
   interface Structure extends RoomObject {
