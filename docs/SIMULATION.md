@@ -117,6 +117,8 @@ Example output:
 - Tick 13: reached RCL 2 with 2 creeps and 400 energy capacity.
 ```
 
+When a run fails a gate or hits an invalid colony state, the markdown and JSON outputs include a short `Breadcrumbs` section/field with the last few significant events to help reproduce the failure.
+
 ## Current CI gates
 
 The npm scripts now include conservative pass/fail gates:
@@ -137,6 +139,7 @@ The model often reaches higher RCLs, but the gates are intentionally conservativ
 - milestone ticks for RCL upgrades
 - invalid colony-state failures
 - explicit gates such as required RCL by tick
+- breadcrumbs for the last N significant events on failed runs (spawns, RCL milestones, capacity changes, gate/failure reasons)
 - proof caveat/trust level in JSON and markdown output
 
 ## What it does not prove
