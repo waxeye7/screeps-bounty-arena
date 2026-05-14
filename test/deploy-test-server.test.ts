@@ -40,7 +40,7 @@ describe("private test-server workflow", () => {
     ).toThrow(/SCREEPS_TOKEN/);
   });
 
-  it("prints a status smoke report", () => {
+  it("prints a private-server status report with offline fallback", () => {
     const output = execFileSync("node", ["scripts/test-server-status.mjs"], {
       encoding: "utf8",
       env: {
@@ -50,11 +50,50 @@ describe("private test-server workflow", () => {
       },
     });
 
-    expect(output).toContain("Screeps private/test-server status smoke");
+    expect(output).toContain("Screeps private/test-server status");
     expect(output).toContain("server: http://localhost:21025");
     expect(output).toContain("branch: agent-sandbox");
+    expect(output).toContain("reachable:");
+    expect(output).toContain("Offline comparison:");
     expect(output).toContain("final RCL:");
     expect(output).toContain("failures: 0");
+  });
+
+  it("reports unreachable local servers without failing the status command", () => {
+    const output = execFileSync("node", ["scripts/test-server-status.mjs", "--ticks", "25", "--timeout-ms", "50"], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        SCREEPS_SERVER_URL: "http://127.0.0.1:9",
+        SCREEPS_BRANCH: "agent-sandbox",
+      },
+    });
+
+    expect(output).toContain("reachable: no");
+    expect(output).toContain("server/API unavailable");
+    expect(output).toContain("Offline comparison:");
+  });
+
+  it("redacts tokens from status output", () => {
+    const token = "super-secret-token";
+    const urlPassword = "url-password-secret";
+    const queryToken = "query-token-secret";
+    const output = execFileSync("node", ["scripts/test-server-status.mjs", "--timeout-ms", "50"], {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        SCREEPS_SERVER_URL: `http://local-user:${urlPassword}@127.0.0.1:9?token=${queryToken}`,
+        SCREEPS_USERNAME: "local-agent",
+        SCREEPS_BRANCH: "agent-sandbox",
+        SCREEPS_TOKEN: token,
+      },
+    });
+
+    expect(output).toContain("token configured: yes (redacted)");
+    expect(output).toContain("[redacted]");
+    expect(output).not.toContain(token);
+    expect(output).not.toContain(urlPassword);
+    expect(output).not.toContain(queryToken);
   });
 
   it("generates a local-server proof block without leaking tokens", () => {
