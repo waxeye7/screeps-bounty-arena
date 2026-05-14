@@ -42,6 +42,7 @@ export function collectProof({ composeDir, logTail = 120 }) {
   const configFile = join(composeDir, "config.yml");
   const envFile = join(composeDir, ".env");
   const composeArgs = (args) => buildComposeArgs({ composeFile, envFile, args });
+  const redactions = buildRedactions(process.env);
   const dockerVersion = run("docker", ["--version"]);
   const composeVersion = run("docker", ["compose", "version"]);
   const composePs = existsSync(composeFile)
@@ -63,8 +64,11 @@ export function collectProof({ composeDir, logTail = 120 }) {
     composeVersion,
     composePs,
     screepsLogs,
+    redactions,
     env: {
-      serverUrl: process.env.SCREEPS_SERVER_URL || "http://127.0.0.1:21025",
+      serverUrl: sanitizeUrlForDisplay(
+        process.env.SCREEPS_SERVER_URL || "http://127.0.0.1:21025",
+      ),
       branch: process.env.SCREEPS_BRANCH || "sandbox",
       hasToken: Boolean(process.env.SCREEPS_TOKEN),
     },
@@ -81,6 +85,7 @@ export function buildComposeArgs({ composeFile, envFile, args }) {
 }
 
 export function formatProof(proof) {
+  const redactions = proof.redactions || [];
   return `## Local Screeps private-server proof
 
 Generated: ${proof.generatedAt}
@@ -105,13 +110,13 @@ ${clip(proof.composeVersion.output)}
 ### Compose status
 
 \`\`\`text
-${clip(proof.composePs.output)}
+${clip(redact(proof.composePs.output, redactions))}
 \`\`\`
 
 ### Screeps server logs tail
 
 \`\`\`text
-${clip(proof.screepsLogs.output)}
+${clip(redact(proof.screepsLogs.output, redactions))}
 \`\`\`
 
 ### Required PR notes
@@ -147,4 +152,37 @@ function clip(value, max = 12_000) {
   const text = String(value || "").trim();
   if (text.length <= max) return text;
   return `${text.slice(0, max)}\n... clipped ...`;
+}
+
+export function sanitizeUrlForDisplay(value) {
+  try {
+    const url = new URL(value);
+    url.username = "";
+    url.password = "";
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return "invalid SCREEPS_SERVER_URL";
+  }
+}
+
+export function buildRedactions(env) {
+  const values = [env.SCREEPS_TOKEN].filter(Boolean);
+  if (env.SCREEPS_SERVER_URL) {
+    try {
+      const url = new URL(env.SCREEPS_SERVER_URL);
+      if (url.username) values.push(url.username, decodeURIComponent(url.username));
+      if (url.password) values.push(url.password, decodeURIComponent(url.password));
+    } catch {
+      // Invalid URLs are represented generically in proof output.
+    }
+  }
+  return [...new Set(values.filter((value) => String(value).length > 0))];
+}
+
+function redact(value, redactions) {
+  let output = String(value || "");
+  for (const secret of redactions) {
+    output = output.split(String(secret)).join("[redacted]");
+  }
+  return output;
 }

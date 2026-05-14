@@ -80,6 +80,27 @@ describe("private test-server workflow", () => {
     expect(output).not.toContain("super-secret-token");
   });
 
+  it("redacts URL credentials from local-server proof output", () => {
+    const output = execFileSync(
+      "node",
+      ["scripts/local-server-proof.mjs", "--compose-dir", "does-not-exist", "--markdown"],
+      {
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          SCREEPS_SERVER_URL: "http://local-user:local-pass@localhost:21025",
+          SCREEPS_BRANCH: "agent-sandbox",
+          SCREEPS_TOKEN: "super-secret-token",
+        },
+      },
+    );
+
+    expect(output).toContain("Server URL: http://localhost:21025");
+    expect(output).not.toContain("local-user");
+    expect(output).not.toContain("local-pass");
+    expect(output).not.toContain("super-secret-token");
+  });
+
   it("uses the local Compose env file when proof capture has one", () => {
     const output = execFileSync(
       "node",
