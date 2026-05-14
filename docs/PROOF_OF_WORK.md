@@ -6,6 +6,8 @@ Bounty PRs should include evidence that the bot behavior works, not just a code 
 
 For repeatable submissions, start from the reusable [proof artifact template](./PROOF_ARTIFACT_TEMPLATE.md), then paste the completed artifact into the PR body or a PR comment.
 
+For RCL milestone videos, use the seeded [time-lapse proof workflow](./TIME_LAPSE_PROOF.md) so the clip is tied to a commit SHA, seed/config, and reproducible command.
+
 For gameplay/economy changes, attach at least one of:
 
 - a short video of a room reaching the requested RCL milestone
@@ -62,6 +64,8 @@ For RCL milestone bounties, the best proof is a short accelerated clip:
 - include the seed/config in the PR text
 - include the exact commit SHA tested
 - post as a GitHub attachment/GIF when needed
+
+Use [TIME_LAPSE_PROOF.md](./TIME_LAPSE_PROOF.md) for a full seeded workflow and copyable PR evidence block.
 
 A video without seed/config is weaker proof. A seed/config without video can still be acceptable if it is fully reproducible.
 
