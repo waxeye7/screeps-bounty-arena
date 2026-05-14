@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main(process.env);
 }
 
@@ -24,9 +24,7 @@ export function main(env) {
   console.log(`branch: ${config.branch}`);
   console.log(`server: ${config.serverUrl}`);
   console.log(`bundle: ${relative(repoRoot, outputPath)}`);
-  console.log(
-    "Next manual step: upload the bundle to your private Screeps server using the CLI/API you trust.",
-  );
+  uploadBundle(config);
 }
 
 export function readDeployConfig(env) {
@@ -69,4 +67,28 @@ export function buildDeployBundle(config) {
     source,
     "",
   ].join("\n");
+}
+
+/**
+ * Upload (or simulate uploading) the built bundle to a Screeps private server.
+ *
+ * Dry-run mode (default): logs what would happen, returns { dryRun: true }.
+ * Real mode (SCREEPS_DRY_RUN=0 + SCREEPS_TOKEN set): logs a redacted notice,
+ *   returns { dryRun: false, note: 'manual upload required' }.
+ *
+ * The SCREEPS_TOKEN value is NEVER included in any output string.
+ */
+export function uploadBundle(config) {
+  if (config.dryRun) {
+    console.log(
+      `DRY RUN: would upload dist/main.js to ${config.serverUrl}/api/user/code branch=${config.branch}`,
+    );
+    return { dryRun: true };
+  }
+
+  // Real mode — token must already be validated by validateConfig().
+  console.log(
+    "UPLOAD: requires screeps-api CLI or equivalent; token is set (redacted)",
+  );
+  return { dryRun: false, note: "manual upload required" };
 }
