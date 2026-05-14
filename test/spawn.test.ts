@@ -17,27 +17,40 @@ describe('buildWorkerBody', () => {
   });
 });
 
-function makeSpawn(calls: unknown[], energyAvailable = 200, constructionSites: ConstructionSite[] = []): StructureSpawn {
+const defaultSource = { id: 'source1', pos: { isNearTo: () => true } } as Source;
+
+function makeSpawn(
+  calls: unknown[],
+  energyAvailable = 200,
+  constructionSites: ConstructionSite[] = [],
+  sources: Source[] = [defaultSource],
+  spawning: unknown = null,
+  spawnResult = 0,
+): StructureSpawn {
   return {
     id: 'spawn1',
     name: 'Spawn1',
-    spawning: null,
+    spawning,
     pos: { isNearTo: () => true },
     room: {
       energyAvailable,
-      find: (type: number) => (type === FIND_CONSTRUCTION_SITES ? constructionSites : []),
+      find: (type: number) => {
+        if (type === FIND_CONSTRUCTION_SITES) return constructionSites;
+        if (type === FIND_SOURCES) return sources;
+        return [];
+      },
     },
     structureType: STRUCTURE_SPAWN,
     spawnCreep: (...args: unknown[]) => {
       calls.push(args);
-      return 0;
+      return spawnResult;
     },
   } as unknown as StructureSpawn;
 }
 
 describe('spawn planning', () => {
 
-  it('detects emergency and spawns recovery worker when no harvesters or miners exist', () => {
+  it('detects emergency but waits when energy is below the cheapest worker body', () => {
     const calls: unknown[] = [];
     globalThis.Game = {
       time: 999,
@@ -49,9 +62,7 @@ describe('spawn planning', () => {
     const isEmergency = ensureEmergencyRecovery(spawn);
 
     expect(isEmergency).toBe(true);
-    expect(calls).toHaveLength(1);
-    // Even with 100 energy, it tries to build a 200 energy body (fallback minimal)
-    expect(calls[0]).toEqual([[WORK, CARRY, MOVE], 'RecoveryHarvester999', { memory: { role: 'harvester' } }]);
+    expect(calls).toHaveLength(0);
   });
 
   it('detects emergency and uses available energy for recovery worker', () => {
@@ -103,6 +114,80 @@ describe('spawn planning', () => {
       'Harvester123',
       { memory: { role: 'harvester' } },
     ]);
+  });
+
+  it('does not spawn a harvester while the spawn is busy', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 124,
+      creeps: {},
+      spawns: {},
+    } as GameGlobal;
+
+    ensureBasicHarvesters(makeSpawn(calls, 300, [], [defaultSource], { name: 'Harvester123' }), 1);
+
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not spawn a harvester when room energy is below the cheapest worker body', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 125,
+      creeps: {},
+      spawns: {},
+    } as GameGlobal;
+
+    ensureBasicHarvesters(makeSpawn(calls, 199), 1);
+
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not spawn a harvester when no sources are visible', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 126,
+      creeps: {},
+      spawns: {},
+    } as GameGlobal;
+
+    ensureBasicHarvesters(makeSpawn(calls, 300, [], []), 1);
+
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not spawn a harvester when the desired count is already satisfied', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 127,
+      creeps: {
+        Harvester1: { memory: { role: 'harvester' } } as Creep,
+      },
+      spawns: {},
+    } as GameGlobal;
+
+    ensureBasicHarvesters(makeSpawn(calls, 300), 1);
+
+    expect(calls).toHaveLength(0);
+  });
+
+  it('does not repeat failed spawn attempts in the same tick', () => {
+    const calls: unknown[] = [];
+    globalThis.Game = {
+      time: 128,
+      creeps: {},
+      spawns: {},
+    } as GameGlobal;
+
+    const spawn = makeSpawn(calls, 300, [], [defaultSource], null, -6);
+    ensureBasicHarvesters(spawn, 1);
+    ensureBasicHarvesters(spawn, 1);
+
+    expect(calls).toHaveLength(1);
+
+    globalThis.Game.time = 129;
+    ensureBasicHarvesters(spawn, 1);
+
+    expect(calls).toHaveLength(2);
   });
 
   it('spawns an upgrader after basic harvester coverage exists', () => {

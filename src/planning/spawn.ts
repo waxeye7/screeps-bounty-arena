@@ -9,6 +9,7 @@ const BODY_PART_COSTS: Record<BodyPartConstant, number> = {
 };
 const MIN_WORKER_ENERGY = 200;
 const MAX_CREEP_BODY_PARTS = 50;
+const failedSpawnAttempts = new Map<string, number>();
 
 export function buildWorkerBody(availableEnergy: number): BodyPartConstant[] {
   const budget = Number.isFinite(availableEnergy) ? Math.floor(availableEnergy) : MIN_WORKER_ENERGY;
@@ -37,12 +38,9 @@ export function buildWorkerBody(availableEnergy: number): BodyPartConstant[] {
 
 export function ensureBasicHarvesters(spawn: StructureSpawn, desiredCount = 3): void {
   const harvesters = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'harvester');
-  if (harvesters.length >= desiredCount || spawn.spawning) return;
+  if (harvesters.length >= desiredCount || !hasVisibleSource(spawn.room)) return;
 
-  const name = `Harvester${Game.time}`;
-  spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
-    memory: { role: 'harvester' },
-  });
+  trySpawnWorker(spawn, 'harvester', `Harvester${Game.time}`);
 }
 
 export function ensureBasicUpgraders(spawn: StructureSpawn, desiredCount = 1, requiredHarvesters = 3): void {
@@ -52,10 +50,7 @@ export function ensureBasicUpgraders(spawn: StructureSpawn, desiredCount = 1, re
   const upgraders = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'upgrader');
   if (upgraders.length >= desiredCount) return;
 
-  const name = `Upgrader${Game.time}`;
-  spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
-    memory: { role: 'upgrader' },
-  });
+  trySpawnWorker(spawn, 'upgrader', `Upgrader${Game.time}`);
 }
 
 export function ensureBasicBuilders(spawn: StructureSpawn, desiredCount = 1, requiredHarvesters = 3): void {
@@ -68,10 +63,7 @@ export function ensureBasicBuilders(spawn: StructureSpawn, desiredCount = 1, req
   const builders = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'builder');
   if (builders.length >= desiredCount) return;
 
-  const name = `Builder${Game.time}`;
-  spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
-    memory: { role: 'builder' },
-  });
+  trySpawnWorker(spawn, 'builder', `Builder${Game.time}`);
 }
 
 export function ensureBasicRepairers(spawn: StructureSpawn, desiredCount = 1, requiredHarvesters = 3): void {
@@ -84,10 +76,7 @@ export function ensureBasicRepairers(spawn: StructureSpawn, desiredCount = 1, re
   const repairers = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'repairer');
   if (repairers.length >= desiredCount) return;
 
-  const name = `Repairer${Game.time}`;
-  spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
-    memory: { role: 'repairer' },
-  });
+  trySpawnWorker(spawn, 'repairer', `Repairer${Game.time}`);
 }
 
 export function ensureContainerMiningEconomy(
@@ -104,21 +93,48 @@ export function ensureContainerMiningEconomy(
   if (!hasSourceSideContainer(spawn.room) && !hasDroppedEnergy(spawn.room)) return;
 
   if (countRole('miner') < desiredMiners) {
-    spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), `Miner${Game.time}`, {
-      memory: { role: 'miner' },
-    });
+    trySpawnWorker(spawn, 'miner', `Miner${Game.time}`);
     return;
   }
 
   if (countRole('hauler') < desiredHaulers) {
-    spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), `Hauler${Game.time}`, {
-      memory: { role: 'hauler' },
-    });
+    trySpawnWorker(spawn, 'hauler', `Hauler${Game.time}`);
   }
 }
 
 function countRole(role: CreepRole): number {
   return Object.values(Game.creeps).filter((creep) => creep.memory.role === role).length;
+}
+
+function trySpawnWorker(spawn: StructureSpawn, role: CreepRole, name: string): boolean {
+  if (spawn.spawning || isWorkerSpawnBlockedThisTick(spawn) || !hasEnoughEnergyForWorker(spawn)) return false;
+
+  const result = spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
+    memory: { role },
+  });
+
+  if (result !== 0) {
+    failedSpawnAttempts.set(spawnAttemptKey(spawn), Game.time);
+    return false;
+  }
+
+  return true;
+}
+
+function isWorkerSpawnBlockedThisTick(spawn: StructureSpawn): boolean {
+  return failedSpawnAttempts.get(spawnAttemptKey(spawn)) === Game.time;
+}
+
+function spawnAttemptKey(spawn: StructureSpawn): string {
+  return spawn.name || spawn.id;
+}
+
+function hasEnoughEnergyForWorker(spawn: StructureSpawn): boolean {
+  return (spawn.room.energyAvailable ?? MIN_WORKER_ENERGY) >= MIN_WORKER_ENERGY;
+}
+
+function hasVisibleSource(room: Room): boolean {
+  return room.find(FIND_SOURCES).length > 0;
 }
 
 function hasSourceSideContainer(room: Room): boolean {
@@ -146,15 +162,9 @@ export function ensureEmergencyRecovery(spawn: StructureSpawn): boolean {
   
   // Emergency condition: 0 harvesters and 0 miners (no energy income)
   if (harvesters.length === 0 && miners.length === 0) {
-    const availableEnergy = spawn.room.energyAvailable ?? 0;
-    // Spawn minimal viable recovery worker using only currently available energy
-    // Even if it's less than standard MIN_WORKER_ENERGY, try to spawn a basic [WORK, CARRY, MOVE]
-    // which costs 200. If energy is less, we must wait until it naturally regens to 200, but we request 200.
-    const energyToUse = Math.max(MIN_WORKER_ENERGY, availableEnergy);
-    
-    spawn.spawnCreep(buildWorkerBody(energyToUse), `RecoveryHarvester${Game.time}`, {
-      memory: { role: 'harvester' },
-    });
+    if (!hasVisibleSource(spawn.room)) return true;
+
+    trySpawnWorker(spawn, 'harvester', `RecoveryHarvester${Game.time}`);
     return true; // We are in an emergency state, block other spawns
   }
   
