@@ -6,15 +6,29 @@ export interface RoomMemoryV1 {
 
 export function cleanupDeadCreeps(): string[] {
   const removed: string[] = [];
+  const creepMemory = ensureCreepMemoryRecord();
+  const liveCreeps = isRecord(Game.creeps) ? Game.creeps : {};
 
-  for (const name of Object.keys(Memory.creeps)) {
-    if (!Game.creeps[name]) {
-      delete Memory.creeps[name];
+  for (const name of Object.keys(creepMemory)) {
+    if (!liveCreeps[name]) {
+      delete creepMemory[name];
       removed.push(name);
     }
   }
 
   return removed;
+}
+
+function ensureCreepMemoryRecord(): Record<string, CreepMemory> {
+  if (!isRecord(Memory.creeps)) {
+    Memory.creeps = {};
+  }
+
+  return Memory.creeps;
+}
+
+function isRecord(value: unknown): value is Record<string, never> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function migrateRoomMemory(): void {

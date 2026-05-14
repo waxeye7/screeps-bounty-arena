@@ -21,6 +21,23 @@ describe('memory helpers', () => {
     expect(Memory.creeps).toEqual({ AliveHarvester: { role: 'harvester' } });
   });
 
+  it('recreates missing creep memory without throwing', () => {
+    delete (Memory as Partial<MemoryGlobal>).creeps;
+    Game.creeps = {
+      AliveHarvester: { name: 'AliveHarvester', memory: { role: 'harvester' } } as Creep,
+    };
+
+    expect(cleanupDeadCreeps()).toEqual([]);
+    expect(Memory.creeps).toEqual({});
+  });
+
+  it('replaces malformed creep memory with an empty record', () => {
+    (Memory as unknown as { creeps: unknown }).creeps = 'stale-serialized-creeps';
+
+    expect(cleanupDeadCreeps()).toEqual([]);
+    expect(Memory.creeps).toEqual({});
+  });
+
   it('adds a current version to an existing room memory record without dropping fields', () => {
     expect(migrateRoomMemoryRecord({ version: 0, planner: 'early' } as Partial<RoomMemory>)).toEqual({
       version: ROOM_MEMORY_VERSION,
