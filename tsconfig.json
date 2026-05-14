@@ -3,10 +3,11 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "Bundler",
+    "allowJs": true,
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
     "types": ["node", "./src/types/screeps"]
   },
-  "include": ["src", "test"]
+  "include": ["src", "scripts", "test"]
 }

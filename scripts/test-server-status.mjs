@@ -2,6 +2,7 @@
 
 import { parseArgs } from "node:util";
 import { runOfflineSimulation, formatMarkdownReport } from "./simulate.mjs";
+import { stripUrlUserInfo } from "./redact-url.mjs";
 
 const { values } = parseArgs({
   options: {
@@ -23,9 +24,11 @@ const result = runOfflineSimulation({
   spawnConfig: "balanced",
 });
 
+const serverUrl = stripUrlUserInfo(process.env.SCREEPS_SERVER_URL || "http://127.0.0.1:21025");
+
 const status = {
   environment: "private/test-server smoke placeholder",
-  serverUrl: process.env.SCREEPS_SERVER_URL || "http://127.0.0.1:21025",
+  serverUrl,
   branch: process.env.SCREEPS_BRANCH || "sandbox",
   hasToken: Boolean(process.env.SCREEPS_TOKEN),
   simulation: result,
@@ -37,7 +40,7 @@ if (values.json) {
   console.log(formatMarkdownReport(result));
 } else {
   console.log("Screeps private/test-server status smoke");
-  console.log(`server: ${status.serverUrl}`);
+  console.log(`server: ${serverUrl}`);
   console.log(`branch: ${status.branch}`);
   console.log(`token configured: ${status.hasToken ? "yes" : "no"}`);
   console.log(`ticks: ${result.ticks}`);
