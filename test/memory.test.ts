@@ -59,4 +59,24 @@ describe('memory helpers', () => {
       W1N2: { version: ROOM_MEMORY_VERSION },
     });
   });
+
+  it('handles missing or primitive Memory.rooms gracefully', () => {
+    Game.rooms = { W1N1: {} as Room };
+    (Memory as any).rooms = 'corrupted-string';
+
+    expect(() => migrateRoomMemory()).not.toThrow();
+    expect(Memory.rooms).toEqual({
+      W1N1: { version: ROOM_MEMORY_VERSION },
+    });
+  });
+
+  it('preserves other fields when bumping stale migration version', () => {
+    const existingMemory = { version: 0, customData: 'test' };
+    const migrated = migrateRoomMemoryRecord(existingMemory as Partial<RoomMemory>);
+    
+    expect(migrated).toEqual({
+      version: ROOM_MEMORY_VERSION,
+      customData: 'test',
+    });
+  });
 });

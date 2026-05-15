@@ -36,3 +36,29 @@ describe('role edge cases', () => {
     expect(calls).toEqual(['Upgrader1:say:no ctrl']);
   });
 });
+
+import { loop } from '../src/main';
+
+describe('main loop edge cases', () => {
+  it('does not crash when a creep has missing or corrupted memory', () => {
+    const { room, spawn } = mockRoomFixture();
+    
+    const missingCreep = mockCreep({ name: 'MissingMemoryCreep', role: 'harvester', room });
+    missingCreep.memory = undefined as any;
+    
+    const corruptedCreep = mockCreep({ name: 'CorruptedRoleCreep', role: 'fake-role' as any, room });
+
+    globalThis.Game = {
+      time: 1,
+      spawns: { Spawn1: spawn },
+      creeps: {
+        MissingMemoryCreep: missingCreep,
+        CorruptedRoleCreep: corruptedCreep,
+      },
+      rooms: { W1N1: room },
+    } as unknown as GameGlobal;
+    globalThis.Memory = { creeps: {}, rooms: {} };
+
+    expect(() => loop()).not.toThrow();
+  });
+});

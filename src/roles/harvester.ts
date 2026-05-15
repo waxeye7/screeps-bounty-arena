@@ -22,7 +22,7 @@ export function chooseSource(creep: Creep): Source | undefined {
   const sources = Object.values(Game.spawns)[0]?.room.find(FIND_SOURCES) ?? [];
   if (sources.length === 0) return undefined;
 
-  if (creep.memory.sourceId) {
+  if (creep.memory?.sourceId) {
     const remembered = sources.find((source) => source.id === creep.memory.sourceId);
     if (remembered) return remembered;
   }
@@ -30,7 +30,7 @@ export function chooseSource(creep: Creep): Source | undefined {
   const assignmentCounts = new Map(sources.map((source) => [source.id, 0]));
   for (const otherCreep of Object.values(Game.creeps)) {
     if (otherCreep.name === creep.name) continue;
-    const sourceId = otherCreep.memory.sourceId;
+    const sourceId = otherCreep.memory?.sourceId;
     if (sourceId && assignmentCounts.has(sourceId)) {
       assignmentCounts.set(sourceId, (assignmentCounts.get(sourceId) ?? 0) + 1);
     }
@@ -42,6 +42,7 @@ export function chooseSource(creep: Creep): Source | undefined {
     return sourceCount < bestCount ? source : bestSource;
   });
 
+  if (!creep.memory) creep.memory = {};
   creep.memory.sourceId = selected.id;
   return selected;
 }

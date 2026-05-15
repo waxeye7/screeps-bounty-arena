@@ -43,9 +43,22 @@ export function ensureBasicHarvesters(spawn: StructureSpawn, desiredCount = 3): 
   trySpawnWorker(spawn, 'harvester', `Harvester${Game.time}`);
 }
 
-export function ensureBasicUpgraders(spawn: StructureSpawn, desiredCount = 1, requiredHarvesters = 3): void {
+export function ensureBasicUpgraders(spawn: StructureSpawn, desiredCount?: number, requiredHarvesters = 3): void {
   const harvesters = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'harvester');
   if (harvesters.length < requiredHarvesters || spawn.spawning) return;
+
+  if (desiredCount === undefined) {
+    desiredCount = 1;
+    const capacity = spawn.room.energyCapacityAvailable ?? 300;
+    const energy = spawn.room.energyAvailable ?? 300;
+    if (capacity > 300 && energy >= capacity * 0.8) {
+      desiredCount += 1;
+    }
+    const constructionSites = spawn.room.find(FIND_CONSTRUCTION_SITES);
+    if (constructionSites.length === 0 && energy >= 300) {
+      desiredCount += 1;
+    }
+  }
 
   const upgraders = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'upgrader');
   if (upgraders.length >= desiredCount) return;
@@ -53,12 +66,16 @@ export function ensureBasicUpgraders(spawn: StructureSpawn, desiredCount = 1, re
   trySpawnWorker(spawn, 'upgrader', `Upgrader${Game.time}`);
 }
 
-export function ensureBasicBuilders(spawn: StructureSpawn, desiredCount = 1, requiredHarvesters = 3): void {
+export function ensureBasicBuilders(spawn: StructureSpawn, desiredCount?: number, requiredHarvesters = 3): void {
   const constructionSites = spawn.room.find(FIND_CONSTRUCTION_SITES);
   if (constructionSites.length === 0 || spawn.spawning) return;
 
   const harvesters = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'harvester');
   if (harvesters.length < requiredHarvesters) return;
+
+  if (desiredCount === undefined) {
+    desiredCount = Math.min(3, Math.max(1, Math.ceil(constructionSites.length / 5)));
+  }
 
   const builders = Object.values(Game.creeps).filter((creep) => creep.memory.role === 'builder');
   if (builders.length >= desiredCount) return;
@@ -103,21 +120,39 @@ export function ensureContainerMiningEconomy(
 }
 
 function countRole(role: CreepRole): number {
-  return Object.values(Game.creeps).filter((creep) => creep.memory.role === role).length;
+  return Object.values(Game.creeps).filter((creep) => creep.memory?.role === role).length;
+}
+
+const lastSpawnedRole = new Map<string, CreepRole>();
+const starvationYields = new Map<string, number>();
+
+export function resetSpawnPlannerForTests(): void {
+  failedSpawnAttempts.clear();
+  lastSpawnedRole.clear();
+  starvationYields.clear();
 }
 
 function trySpawnWorker(spawn: StructureSpawn, role: CreepRole, name: string): boolean {
   if (spawn.spawning || isWorkerSpawnBlockedThisTick(spawn) || !hasEnoughEnergyForWorker(spawn)) return false;
+
+  const spawnKey = spawnAttemptKey(spawn);
+
+  // Anti-starvation: yield one tick if this role was the last one spawned
+  if (lastSpawnedRole.get(spawnKey) === role && starvationYields.get(spawnKey) !== Game.time - 1) {
+    starvationYields.set(spawnKey, Game.time);
+    return false;
+  }
 
   const result = spawn.spawnCreep(buildWorkerBody(spawn.room.energyAvailable ?? MIN_WORKER_ENERGY), name, {
     memory: { role },
   });
 
   if (result !== 0) {
-    failedSpawnAttempts.set(spawnAttemptKey(spawn), Game.time);
+    failedSpawnAttempts.set(spawnKey, Game.time);
     return false;
   }
 
+  lastSpawnedRole.set(spawnKey, role);
   return true;
 }
 
@@ -157,8 +192,8 @@ export function ensureEmergencyRecovery(spawn: StructureSpawn): boolean {
   if (spawn.spawning) return true; // Handled
 
   const creeps = Object.values(Game.creeps);
-  const harvesters = creeps.filter(c => c.memory.role === 'harvester');
-  const miners = creeps.filter(c => c.memory.role === 'miner');
+  const harvesters = creeps.filter(c => c.memory?.role === 'harvester');
+  const miners = creeps.filter(c => c.memory?.role === 'miner');
   
   // Emergency condition: 0 harvesters and 0 miners (no energy income)
   if (harvesters.length === 0 && miners.length === 0) {

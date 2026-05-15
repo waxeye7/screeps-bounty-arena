@@ -40,7 +40,7 @@ export function loop(): void {
   }
 
   for (const creep of Object.values(Game.creeps)) {
-    switch (creep.memory.role) {
+    switch (creep.memory?.role) {
       case 'builder':
         runBuilder(creep);
         break;

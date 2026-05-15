@@ -16,6 +16,7 @@ npm test
 - Keep the PR focused.
 - Explain what changed and why.
 - Include verification output.
+- Provide visual proof if requested. See [Video Proof Workflow](docs/VIDEO_PROOF_WORKFLOW.md).
 - Avoid broad rewrites unless requested.
 
 ## Bounty issue format

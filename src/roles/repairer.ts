@@ -79,12 +79,15 @@ function repairPriority(structure: Structure): number {
 
 function chooseSource(creep: Creep): Source | undefined {
   const sources = creep.room.find(FIND_SOURCES);
-  if (creep.memory.sourceId) {
+  if (creep.memory?.sourceId) {
     const remembered = sources.find((source) => source.id === creep.memory.sourceId);
     if (remembered) return remembered;
   }
 
   const selected = sources[0];
-  if (selected) creep.memory.sourceId = selected.id;
+  if (selected) {
+    if (!creep.memory) creep.memory = {};
+    creep.memory.sourceId = selected.id;
+  }
   return selected;
 }

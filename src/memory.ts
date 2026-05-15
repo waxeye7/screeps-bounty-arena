@@ -31,11 +31,25 @@ function isRecord(value: unknown): value is Record<string, never> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * The minimal expected shape for Memory is:
+ * {
+ *   creeps: Record<string, CreepMemory>,
+ *   rooms: Record<string, RoomMemory>
+ * }
+ * 
+ * CreepMemory: { role?: string, sourceId?: string }
+ * RoomMemory: { version?: number }
+ */
+
 export function migrateRoomMemory(): void {
-  Memory.rooms ??= {};
+  if (!isRecord(Memory.rooms)) {
+    Memory.rooms = {};
+  }
 
   for (const roomName of Object.keys(Game.rooms ?? {})) {
-    const existing = Memory.rooms[roomName] ?? {};
+    const rawExisting = Memory.rooms[roomName];
+    const existing = isRecord(rawExisting) ? rawExisting : {};
     Memory.rooms[roomName] = migrateRoomMemoryRecord(existing);
   }
 }

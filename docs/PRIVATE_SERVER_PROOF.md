@@ -54,7 +54,9 @@ For RCL or economy claims, include:
 
 ## Video/GIF rules
 
-Video is supporting evidence, not primary proof.
+Please refer to the [Seeded Time-Lapse Video Proof Workflow](VIDEO_PROOF_WORKFLOW.md) for the standard procedure on providing video evidence.
+
+In general, video is supporting evidence, not primary proof.
 
 Good clips:
 
