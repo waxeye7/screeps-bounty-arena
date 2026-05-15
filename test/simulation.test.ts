@@ -71,6 +71,67 @@ describe("offline simulation", () => {
     ).toThrow();
   });
 
+  it("includes diagnostic fields in JSON output when a gate fails", () => {
+    let stdout = "";
+    let stderr = "";
+    try {
+      execFileSync(
+        "node",
+        [
+          "scripts/simulate.mjs",
+          "--ticks",
+          "100",
+          "--require-rcl",
+          "8",
+          "--json",
+        ],
+        {
+          encoding: "utf8",
+        },
+      );
+    } catch (err: unknown) {
+      const e = err as { stdout?: string; stderr?: string };
+      stdout = e.stdout ?? "";
+      stderr = e.stderr ?? "";
+    }
+
+    // JSON goes to stdout even on failure
+    const result = JSON.parse(stdout) as {
+      ok: boolean;
+      gates: Array<{ name: string; ok: boolean; expected: unknown; actual: unknown }>;
+      diagnostics: {
+        failedGates: Array<{ name: string; expected: unknown; actual: unknown }>;
+        finalTick: number;
+        finalRcl: number;
+        finalCreeps: number;
+        finalEnergyCapacity: number;
+        recentFailures: unknown[];
+      };
+    };
+
+    expect(result.ok).toBe(false);
+
+    // Gate results must include the failing required-rcl gate
+    const rclGate = result.gates.find((g) => g.name === "required-rcl");
+    expect(rclGate).toBeDefined();
+    expect(rclGate?.ok).toBe(false);
+
+    // diagnostics block must be present
+    expect(result.diagnostics).toBeDefined();
+    expect(result.diagnostics.failedGates.length).toBeGreaterThan(0);
+    expect(result.diagnostics.failedGates[0].name).toBe("required-rcl");
+    expect(result.diagnostics.finalTick).toBe(100);
+    expect(typeof result.diagnostics.finalRcl).toBe("number");
+    expect(typeof result.diagnostics.finalCreeps).toBe("number");
+    expect(typeof result.diagnostics.finalEnergyCapacity).toBe("number");
+    expect(Array.isArray(result.diagnostics.recentFailures)).toBe(true);
+
+    // human-readable diagnostics must appear on stderr
+    expect(stderr).toContain("GATE FAILURE DIAGNOSTICS");
+    expect(stderr).toContain("required-rcl");
+    expect(stderr).toContain("Final RCL:");
+  });
+
   it("fails instead of silently falling back when spawn-config is invalid", () => {
     expect(() =>
       execFileSync(

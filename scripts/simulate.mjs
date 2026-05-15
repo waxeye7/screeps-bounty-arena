@@ -70,6 +70,8 @@ function main() {
   }
 
   if (!result.ok) {
+    const diag = formatDiagnostics(result);
+    process.stderr.write(diag + "\n");
     process.exitCode = 1;
   }
 }
@@ -195,8 +197,11 @@ export function runOfflineSimulation({
     milestones,
   });
 
+  const ok = room.failures.length === 0 && gateResults.every((gate) => gate.ok);
+  const failedGates = gateResults.filter((g) => !g.ok);
+
   return {
-    ok: room.failures.length === 0 && gateResults.every((gate) => gate.ok),
+    ok,
     ticks,
     seed: seeds.baseSeed,
     fixture:
@@ -222,6 +227,20 @@ export function runOfflineSimulation({
     milestones,
     failures: room.failures,
     metrics: finalizeMetrics(metrics),
+    diagnostics: ok
+      ? undefined
+      : {
+          failedGates: failedGates.map((g) => ({
+            name: g.name,
+            expected: g.expected,
+            actual: g.actual,
+          })),
+          finalTick: room.tick,
+          finalRcl: room.rcl,
+          finalCreeps: room.creeps,
+          finalEnergyCapacity: room.energyCapacity,
+          recentFailures: room.failures.slice(-5),
+        },
   };
 }
 
@@ -454,6 +473,41 @@ function formatSummary(result) {
     }
   }
 
+  return lines.join("\n");
+}
+
+function formatDiagnostics(result) {
+  const lines = [
+    `=== GATE FAILURE DIAGNOSTICS ===`,
+    `Final tick: ${result.ticks}`,
+    `Final RCL: ${result.final.rcl}`,
+    `Creeps: ${result.final.creeps}`,
+    `Energy capacity: ${result.final.energyCapacity}`,
+    ``,
+    `Failed gates:`,
+  ];
+
+  const failedGates = result.gates?.filter((g) => !g.ok) ?? [];
+  if (failedGates.length === 0) {
+    lines.push("  (none — colony state invalid)");
+  } else {
+    for (const gate of failedGates) {
+      lines.push(`  FAIL ${gate.name}: expected ${gate.expected}, got ${gate.actual}`);
+    }
+  }
+
+  const recent = result.failures.slice(-5);
+  if (recent.length > 0) {
+    lines.push(``, `Recent failures (last ${recent.length}):`);
+    for (const f of recent) {
+      const extra = f.energy !== undefined ? `, energy=${f.energy}` : "";
+      lines.push(`  tick ${f.tick}: ${f.reason}${extra}`);
+    }
+  } else {
+    lines.push(``, `Colony failures: none`);
+  }
+
+  lines.push(`=================================`);
   return lines.join("\n");
 }
 
