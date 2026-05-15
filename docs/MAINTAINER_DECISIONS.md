@@ -15,6 +15,33 @@ The goal is transparency, not bureaucracy.
 
 ## Decision log
 
+### 2026-05-15 — Daily maintainer pass merges #128 and #103
+
+Decision: merge the first clean, verifiable implementations for #100 and #97, and close duplicate PRs after the winning work landed.
+
+Why:
+
+- #128 added focused Memory schema edge-case coverage and small defensive cleanup for malformed creep memory
+- #103 added shared private-server URL/userinfo redaction helpers with token-pattern regression tests
+- both PRs dry-merged cleanly against current `main`
+- private-server-adjacent work was accepted only after URL userinfo/token redaction tests were present
+- #123 and #131 were left open with requested fixes because they had small but real review issues
+
+Actions:
+
+- merged #128 (`e1b4b77`) and closed duplicate #104
+- merged #103 (`39b6c0c`) and closed duplicate #112
+- requested fixes on #123 for a broken leaderboard table header
+- requested fixes on #131 for a refactor that weakened a no-spawn assertion
+
+Verification used:
+
+```bash
+npm run check
+npm test -- --run --pool=forks
+npm run simulate:1k
+```
+
 ### 2026-05-14 — Added maintainer comments to prior PR decisions
 
 Backfilled public comments on merged/closed PRs explaining why each action was taken and what verification was run.
