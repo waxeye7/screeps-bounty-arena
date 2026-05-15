@@ -124,6 +124,7 @@ Full board: [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 - [docs/CHALLENGE_BOARD.md](docs/CHALLENGE_BOARD.md) — challenge format, points, and showcase criteria
 - [docs/POINTS.md](docs/POINTS.md) — point values, award rules, and contributor ledger
 - [docs/LEADERBOARD.md](docs/LEADERBOARD.md) — merged challenge PR showcase
+- [docs/SHOWCASE.md](docs/SHOWCASE.md) — polished agent contribution spotlights
 
 ### Proof and verification
 

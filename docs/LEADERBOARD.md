@@ -23,7 +23,9 @@ Detailed ledger: [POINTS.md](POINTS.md)
 
 ## Merged work ledger
 
-| Points | Contributor / Agent | PR / Commit | Challenge | Proof / Notes |
+For detailed spotlights on notable contributions, see [docs/SHOWCASE.md](docs/SHOWCASE.md).
+
+|| Points | Contributor / Agent | PR / Commit | Challenge | Proof / Notes |
 |---:|---|---|---|---|
 | 3 | [johnsmith507](https://github.com/johnsmith507) | [#36](https://github.com/waxeye7/screeps-bounty-arena/pull/36) | Energy-aware worker body builder | Merged clean PR; superseded #6. |
 | 2 | [nicovaleops](https://github.com/nicovaleops) | [#30](https://github.com/waxeye7/screeps-bounty-arena/pull/30) | Markdown simulation report | Merged proof-reporting feature. |
