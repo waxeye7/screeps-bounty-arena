@@ -9,7 +9,7 @@ describe("private test-server workflow", () => {
       encoding: "utf8",
       env: {
         ...process.env,
-        SCREEPS_SERVER_URL: "http://localhost:21025",
+        SCREEPS_SERVER_URL: "http://deploy-user:deploy-pass@localhost:21025",
         SCREEPS_BRANCH: "agent-sandbox",
         SCREEPS_TOKEN: "secret-token",
       },
@@ -18,13 +18,17 @@ describe("private test-server workflow", () => {
     expect(output).toContain("Prepared Screeps private/test-server deploy bundle");
     expect(output).toContain("branch: agent-sandbox");
     expect(output).toContain("server: http://localhost:21025");
+    expect(output).not.toContain("deploy-user");
+    expect(output).not.toContain("deploy-pass");
 
     const bundlePath = join(process.cwd(), "dist", "main.js");
     expect(existsSync(bundlePath)).toBe(true);
 
     const bundle = readFileSync(bundlePath, "utf8");
-    expect(bundle).toContain("Target: http://localhost:21025 / branch agent-sandbox");
+    expect(bundle).toContain("Target: http://redacted:redacted@localhost:21025 / branch agent-sandbox");
     expect(bundle).not.toContain("secret-token");
+    expect(bundle).not.toContain("deploy-user");
+    expect(bundle).not.toContain("deploy-pass");
   });
 
   it("refuses non-dry-run mode without a token", () => {
@@ -45,7 +49,7 @@ describe("private test-server workflow", () => {
       encoding: "utf8",
       env: {
         ...process.env,
-        SCREEPS_SERVER_URL: "http://localhost:21025",
+        SCREEPS_SERVER_URL: "http://status-user:status-pass@localhost:21025",
         SCREEPS_BRANCH: "agent-sandbox",
       },
     });
@@ -55,6 +59,8 @@ describe("private test-server workflow", () => {
     expect(output).toContain("branch: agent-sandbox");
     expect(output).toContain("final RCL:");
     expect(output).toContain("failures: 0");
+    expect(output).not.toContain("status-user");
+    expect(output).not.toContain("status-pass");
   });
 
   it("generates a local-server proof block without leaking tokens", () => {
