@@ -16,6 +16,8 @@ Label the proof level honestly before the evidence block:
 
 Offline simulation is smoke proof only. It is useful for catching regressions, but it does not prove real Screeps server behavior.
 
+For RCL milestone videos, use the seeded [time-lapse proof workflow](./TIME_LAPSE_PROOF.md) so the clip is tied to a commit SHA, seed/config, and reproducible command.
+
 For gameplay/economy changes, attach at least one of:
 
 - a short video of a room reaching the requested RCL milestone
