@@ -38,10 +38,36 @@ describe('memory helpers', () => {
     expect(Memory.creeps).toEqual({});
   });
 
+  it('removes invalid creep roles without throwing', () => {
+    (Memory.creeps as Record<string, { role: string }>).Legacy = { role: 'carrier' };
+    Game.creeps = {
+      Legacy: { name: 'Legacy', memory: Memory.creeps.Legacy } as Creep,
+    };
+
+    expect(cleanupDeadCreeps()).toEqual([]);
+    expect(Memory.creeps.Legacy).toEqual({});
+  });
+
+  it('drops malformed creep memory entries without throwing', () => {
+    (Memory.creeps as Record<string, unknown>).Broken = 'old-memory-shape';
+    Game.creeps = {
+      Broken: { name: 'Broken', memory: {} } as Creep,
+    };
+
+    expect(cleanupDeadCreeps()).toEqual([]);
+    expect(Memory.creeps).toEqual({});
+  });
+
   it('adds a current version to an existing room memory record without dropping fields', () => {
     expect(migrateRoomMemoryRecord({ version: 0, planner: 'early' } as Partial<RoomMemory>)).toEqual({
       version: ROOM_MEMORY_VERSION,
       planner: 'early',
+    });
+  });
+
+  it('replaces stale room memory versions', () => {
+    expect(migrateRoomMemoryRecord({ version: ROOM_MEMORY_VERSION - 1 })).toEqual({
+      version: ROOM_MEMORY_VERSION,
     });
   });
 

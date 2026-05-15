@@ -4,6 +4,19 @@ export interface RoomMemoryV1 {
   version: typeof ROOM_MEMORY_VERSION;
 }
 
+const VALID_CREEP_ROLES = new Set<CreepRole>([
+  'builder',
+  'harvester',
+  'hauler',
+  'miner',
+  'repairer',
+  'upgrader',
+]);
+
+// Minimal expected Memory shape: Memory.creeps and Memory.rooms are records.
+// Creep memory may contain a known role and sourceId; invalid stale values are removed.
+// Room memory is migrated to the current schema version each tick.
+
 export function cleanupDeadCreeps(): string[] {
   const removed: string[] = [];
   const creepMemory = ensureCreepMemoryRecord();
@@ -22,6 +35,17 @@ export function cleanupDeadCreeps(): string[] {
 function ensureCreepMemoryRecord(): Record<string, CreepMemory> {
   if (!isRecord(Memory.creeps)) {
     Memory.creeps = {};
+  }
+
+  for (const [name, memory] of Object.entries(Memory.creeps)) {
+    if (!isRecord(memory)) {
+      delete Memory.creeps[name];
+      continue;
+    }
+
+    if (memory.role !== undefined && !VALID_CREEP_ROLES.has(memory.role)) {
+      delete memory.role;
+    }
   }
 
   return Memory.creeps;
