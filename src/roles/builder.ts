@@ -24,8 +24,8 @@ export function runBuilder(creep: Creep): void {
 }
 
 function chooseConstructionSite(creep: Creep): ConstructionSite | undefined {
-  const sites = creep.room.find(FIND_CONSTRUCTION_SITES);
-  return sites.find((site) => site.my) ?? sites[0];
+  const sites = creep.room.find(FIND_CONSTRUCTION_SITES).filter((site) => site.my);
+  return sites[0];
 }
 
 function chooseSource(creep: Creep): Source | undefined {
