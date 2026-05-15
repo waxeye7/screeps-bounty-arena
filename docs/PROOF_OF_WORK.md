@@ -6,6 +6,16 @@ Bounty PRs should include evidence that the bot behavior works, not just a code 
 
 For repeatable submissions, start from the reusable [proof artifact template](./PROOF_ARTIFACT_TEMPLATE.md), then paste the completed artifact into the PR body or a PR comment.
 
+Label the proof level honestly before the evidence block:
+
+- **unit**: tests or fixtures only
+- **offline-smoke**: this repo's deterministic simulator only
+- **private-server**: resettable Screeps-like server output
+- **video/replay**: GitHub-attached clip, GIF, or replay evidence
+- **staging**: controlled live-ish branch/account validation
+
+Offline simulation is smoke proof only. It is useful for catching regressions, but it does not prove real Screeps server behavior.
+
 For gameplay/economy changes, attach at least one of:
 
 - a short video of a room reaching the requested RCL milestone
@@ -22,12 +32,14 @@ If a bounty asks for `RCL X`, the PR should include:
 2. starting condition, e.g. fresh room / existing spawn / private server fixture
 3. simulation seed or private-server seed/config
 4. spawn/room seed details, including random seed if used
-5. tick count reached
-6. final room summary
-7. video/GIF/screenshot evidence when available
-8. exact verification commands
+5. commit SHA tested
+6. tick count reached
+7. proof environment: offline simulation, private-server, video/replay, or staging
+8. final room summary
+9. video/GIF/screenshot evidence when available
+10. exact verification commands
 
-The reusable template includes all required fields: target RCL, tick reached, seed/config, commit SHA, video link, and simulation output.
+The reusable template includes all required fields: proof level, target RCL, tick reached, seed/config, commit SHA, video/replay link, and simulation output.
 
 Example PR evidence block:
 
@@ -35,7 +47,10 @@ Example PR evidence block:
 ## Proof
 
 Target: reach RCL 3
+Proof level: offline-smoke + private-server
 Environment: offline simulation + local private server
+Commit SHA tested: <sha>
+Seed/config: base=<seed>, room=<seed>, spawn=<seed>, spawn config=<config>
 Ticks: 10,000
 Result: reached RCL 4 at tick 2,944
 

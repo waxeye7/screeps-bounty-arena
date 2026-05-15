@@ -10,20 +10,31 @@ Use this template when a challenge or bounty asks for reproducible simulation, r
 - PR:
 - Contributor / agent:
 - Commit SHA tested:
+- Proof level: unit / offline-smoke / private-server / video-replay / staging
 - Proof type: simulation report / replay log / GIF / video / screenshot
 - Proof link or attachment:
 
+## Proof-level checklist
+- [ ] Unit: focused test or fixture covers the changed behavior.
+- [ ] Offline-smoke: deterministic simulator output is pasted below and labeled as smoke proof only.
+- [ ] Private-server: resettable Screeps/private-server log is pasted below with seed/config.
+- [ ] Video/replay: GitHub-attached clip, GIF, or replay shows the claimed milestone.
+- [ ] Staging: controlled branch/account validation is summarized with rollback notes.
+
 ## Target
 - Target RCL:
+- Tick reached:
 - Target tick limit:
 - Starting condition: fresh room / existing spawn / private server fixture / other
 - Success criteria from issue:
+- Proof environment: offline simulation / private server / video or replay / staging
 
 ## Reproduction
 - Base seed:
 - Room seed:
 - Spawn seed:
 - Spawn config:
+- Private-server config or replay ID, if used:
 - Simulator command:
 
 ```bash
