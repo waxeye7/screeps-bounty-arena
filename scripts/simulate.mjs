@@ -8,6 +8,7 @@ import {
 } from "./simulation-fixtures.mjs";
 
 const VALID_SPAWN_CONFIGS = ["conservative", "balanced", "aggressive"];
+const BREADCRUMB_LIMIT = 6;
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
@@ -114,6 +115,7 @@ export function runOfflineSimulation({
   };
 
   const milestones = [];
+  const events = [];
   for (let tick = 1; tick <= ticks; tick += 1) {
     room.tick = tick;
 
@@ -135,6 +137,11 @@ export function runOfflineSimulation({
     ) {
       room.energy -= spawnCost;
       room.creeps += 1;
+      recordEvent(events, {
+        tick,
+        type: "spawn",
+        summary: `spawned creep (cost ${spawnCost}, creeps ${room.creeps}, energy ${room.energy})`,
+      });
     }
 
     const upgradeSpend = Math.min(room.energy, 12 + room.creeps * 2);
@@ -146,8 +153,14 @@ export function runOfflineSimulation({
     room.constructionProgress += buildSpend;
 
     if (room.constructionProgress >= room.energyCapacity) {
+      const previousCapacity = room.energyCapacity;
       room.energyCapacity += 50;
       room.constructionProgress = 0;
+      recordEvent(events, {
+        tick,
+        type: "capacity",
+        summary: `energy capacity increased ${previousCapacity} -> ${room.energyCapacity}`,
+      });
     }
 
     const nextRclProgress = progressForNextRcl(room.rcl);
@@ -161,14 +174,25 @@ export function runOfflineSimulation({
         energyCapacity: room.energyCapacity,
         creeps: room.creeps,
       });
+      recordEvent(events, {
+        tick,
+        type: "rcl",
+        summary: `reached RCL ${room.rcl} (energy capacity ${room.energyCapacity}, creeps ${room.creeps})`,
+      });
     }
 
     if (room.energy < 0 || room.creeps <= 0) {
-      room.failures.push({
+      const failure = {
         tick,
         reason: "invalid colony state",
         energy: room.energy,
         creeps: room.creeps,
+      };
+      room.failures.push(failure);
+      recordEvent(events, {
+        tick,
+        type: "failure",
+        summary: `failure: ${failure.reason} (energy ${failure.energy}, creeps ${failure.creeps})`,
       });
       break;
     }
@@ -182,8 +206,27 @@ export function runOfflineSimulation({
     milestones,
   });
 
+  const gateFailures = gateResults.filter((gate) => !gate.ok);
+  for (const gate of gateFailures) {
+    recordEvent(events, {
+      tick: Number.isFinite(gate.reachedTick) ? gate.reachedTick : ticks,
+      type: "gate-failure",
+      summary: `gate ${gate.name} failed: expected ${gate.expected}, actual ${gate.actual}`,
+    });
+  }
+
+  const ok = room.failures.length === 0 && gateResults.every((gate) => gate.ok);
+  const breadcrumbs = ok
+    ? []
+    : buildBreadcrumbs({
+        events,
+        failureTick: room.failures[0]?.tick,
+        fallbackTick: ticks,
+        limit: BREADCRUMB_LIMIT,
+      });
+
   return {
-    ok: room.failures.length === 0 && gateResults.every((gate) => gate.ok),
+    ok,
     ticks,
     seed: seeds.baseSeed,
     fixture:
@@ -208,6 +251,7 @@ export function runOfflineSimulation({
     },
     milestones,
     failures: room.failures,
+    breadcrumbs,
   };
 }
 
@@ -379,6 +423,13 @@ export function formatMarkdownReport(result) {
     lines.push("- None.");
   }
 
+  if (result.breadcrumbs?.length) {
+    lines.push(``, `### Breadcrumbs`);
+    for (const entry of result.breadcrumbs) {
+      lines.push(`- Tick ${entry.tick}: ${entry.summary}`);
+    }
+  }
+
   return lines.join("\n");
 }
 
@@ -422,7 +473,26 @@ function formatSummary(result) {
     }
   }
 
+  if (result.breadcrumbs?.length) {
+    lines.push("breadcrumbs:");
+    for (const entry of result.breadcrumbs) {
+      lines.push(`- tick ${entry.tick}: ${entry.summary}`);
+    }
+  }
+
   return lines.join("\n");
+}
+
+function recordEvent(events, { tick, type, summary }) {
+  events.push({ tick, type, summary });
+}
+
+function buildBreadcrumbs({ events, failureTick, fallbackTick, limit }) {
+  if (!events.length) {
+    return [];
+  }
+  const cutoffTick = Number.isFinite(failureTick) ? failureTick : fallbackTick;
+  return events.filter((event) => event.tick <= cutoffTick).slice(-limit);
 }
 
 function hashSeed(seed) {

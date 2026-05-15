@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 describe("offline simulation", () => {
@@ -60,6 +60,37 @@ describe("offline simulation", () => {
         },
       ),
     ).toThrow();
+  });
+
+  it("includes breadcrumbs in failing JSON output", () => {
+    const result = spawnSync(
+      "node",
+      [
+        "scripts/simulate.mjs",
+        "--ticks",
+        "100",
+        "--require-rcl",
+        "8",
+        "--require-rcl-by",
+        "100",
+        "--json",
+      ],
+      {
+        encoding: "utf8",
+      },
+    );
+
+    expect(result.status).not.toBe(0);
+    const output = JSON.parse(result.stdout) as {
+      ok: boolean;
+      breadcrumbs: Array<{ tick: number; type: string; summary: string }>;
+    };
+
+    expect(output.ok).toBe(false);
+    expect(output.breadcrumbs.length).toBeGreaterThan(0);
+    expect(
+      output.breadcrumbs.some((entry) => entry.type === "gate-failure"),
+    ).toBe(true);
   });
 
   it("fails instead of silently falling back when spawn-config is invalid", () => {

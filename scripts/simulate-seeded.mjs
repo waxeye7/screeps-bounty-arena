@@ -134,11 +134,23 @@ function formatText(result) {
     );
   }
 
+  const failingCases = result.cases.filter(
+    (entry) => !entry.ok && entry.result?.breadcrumbs?.length,
+  );
+  if (failingCases.length) {
+    lines.push("breadcrumbs:");
+    for (const entry of failingCases) {
+      lines.push(
+        `- run ${entry.index} (${entry.seed}): ${formatBreadcrumbsInline(entry.result.breadcrumbs)}`,
+      );
+    }
+  }
+
   return lines.join("\n");
 }
 
 function formatMarkdown(result) {
-  return [
+  const lines = [
     "## Seeded Screeps Simulation Suite",
     "",
     `- Suite: \`${result.suite}\``,
@@ -155,7 +167,21 @@ function formatMarkdown(result) {
     ),
     "",
     "Copy the seed base and failing run seed into the PR if this gate fails.",
-  ].join("\n");
+  ];
+
+  const failingCases = result.cases.filter(
+    (entry) => !entry.ok && entry.result?.breadcrumbs?.length,
+  );
+  if (failingCases.length) {
+    lines.push("", "### Breadcrumbs (failed runs)");
+    for (const entry of failingCases) {
+      lines.push(
+        `- Run ${entry.index} (\`${entry.seed}\`): ${formatBreadcrumbsInline(entry.result.breadcrumbs)}`,
+      );
+    }
+  }
+
+  return lines.join("\n");
 }
 
 function parsePositiveInteger(value, label) {
@@ -164,4 +190,10 @@ function parsePositiveInteger(value, label) {
     throw new Error(`${label} must be a positive integer, got ${value}`);
   }
   return parsed;
+}
+
+function formatBreadcrumbsInline(breadcrumbs) {
+  return breadcrumbs
+    .map((entry) => `tick ${entry.tick}: ${entry.summary}`)
+    .join(" | ");
 }
