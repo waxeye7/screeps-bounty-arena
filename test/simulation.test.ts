@@ -208,4 +208,97 @@ describe("offline simulation", () => {
     ]);
     expect(result.cases.every((entry) => entry.ok)).toBe(true);
   });
+
+  it("runs a fixture matrix suite successfully", () => {
+    const output = execFileSync(
+      "node",
+      [
+        "scripts/simulate-fixtures.mjs",
+        "--ticks",
+        "1000",
+        "--require-rcl",
+        "2",
+        "--require-rcl-by",
+        "1000",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(output).toContain("## Fixture Matrix");
+    expect(output).toContain("| Fixture | Result | Final RCL | Failures | Key milestone |");
+    expect(output).toContain("fresh-room-low-energy");
+    expect(output).toContain("spawn-recovery-no-workers");
+    expect(output).toContain("controller-rush-few-sources");
+    expect(output).toContain("road-planner-site-cap");
+    expect(output).toContain("PASS");
+    expect(output).toContain("RCL 2 @ tick");
+    expect(output).toContain("### Gate details");
+    expect(output).toContain("max-failures");
+  });
+
+  it("exits non-zero when a fixture matrix gate fails", () => {
+    let caught: unknown;
+    try {
+      execFileSync(
+        "node",
+        [
+          "scripts/simulate-fixtures.mjs",
+          "--ticks",
+          "100",
+          "--require-rcl",
+          "8",
+          "--require-rcl-by",
+          "100",
+        ],
+        { encoding: "utf8" },
+      );
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeDefined();
+    const err = caught as { stdout?: string };
+    const stdout = String(err.stdout ?? "");
+    expect(stdout).toContain("FAIL");
+    expect(stdout).toContain("RCL 8 not reached");
+  });
+
+  it("produces valid JSON output", () => {
+    const output = execFileSync(
+      "node",
+      ["scripts/simulate-fixtures.mjs", "--json"],
+      { encoding: "utf8" },
+    );
+    const suite = JSON.parse(output) as {
+      ok: boolean;
+      suite: string;
+      ticks: number;
+      requiredRcl: number;
+      requiredRclBy: number;
+      maxFailures: number;
+      fixtures: Array<{
+        name: string;
+        ok: boolean;
+        finalRcl: number;
+        failures: number;
+        keyMilestone: { label: string; tick: number | null; rcl: number; reached: boolean };
+      }>;
+    };
+
+    expect(suite.ok).toBe(true);
+    expect(suite.suite).toBe("fixture-matrix-v1");
+    expect(suite.ticks).toBe(1000);
+    expect(suite.requiredRcl).toBe(2);
+    expect(suite.requiredRclBy).toBe(1000);
+    expect(suite.maxFailures).toBe(0);
+    expect(suite.fixtures.length).toBe(4);
+    expect(suite.fixtures.every((f) => f.ok)).toBe(true);
+    expect(suite.fixtures.every((f) => f.finalRcl >= 2)).toBe(true);
+    expect(suite.fixtures.every((f) => f.keyMilestone.reached)).toBe(true);
+    expect(suite.fixtures.map((f) => f.name)).toEqual([
+      "fresh-room-low-energy",
+      "spawn-recovery-no-workers",
+      "controller-rush-few-sources",
+      "road-planner-site-cap",
+    ]);
+  });
 });

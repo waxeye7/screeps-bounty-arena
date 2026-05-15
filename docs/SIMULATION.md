@@ -14,6 +14,7 @@ npm run simulate:gate:rcl2
 npm run simulate:gate:rcl3
 npm run simulate:seeded
 npm run simulate:seeded:markdown
+npm run simulate:fixtures
 ```
 
 For machine-readable JSON in scripts, call the simulator directly or run npm with `--silent` so npm does not prepend lifecycle output:
@@ -126,6 +127,51 @@ The npm scripts now include conservative pass/fail gates:
 - `npm run simulate:seeded:markdown` runs three SHA-seeded 3k simulations across different spawn configs and requires RCL 3 by tick 3000.
 
 The model often reaches higher RCLs, but the gates are intentionally conservative so they catch major regressions without pretending to be real Screeps validation.
+
+## Fixture matrix gate
+
+Run every named offline simulation fixture through a common gate with a single command:
+
+```bash
+npm run simulate:fixtures
+```
+
+The fixture matrix runs all four named fixtures under the same `--ticks`, `--require-rcl`, `--require-rcl-by`, and `--max-failures` settings. Defaults require RCL 2 by tick 1000 with zero failures. The output is a compact markdown table:
+
+```markdown
+## Fixture Matrix
+
+- Suite: `fixture-matrix-v1`
+- Ticks: 1000
+- Required RCL: 2 by tick 1000
+- Max failures: 0
+- OK: yes
+
+| Fixture | Result | Final RCL | Failures | Key milestone |
+| --- | --- | ---: | ---: | --- |
+| fresh-room-low-energy | PASS | 6 | 0 | RCL 2 @ tick 17 |
+| spawn-recovery-no-workers | PASS | 6 | 0 | RCL 2 @ tick 16 |
+| controller-rush-few-sources | PASS | 7 | 0 | RCL 2 @ tick 5 |
+| road-planner-site-cap | PASS | 8 | 0 | RCL 2 @ tick 19 |
+
+### Gate details
+
+- PASS max-failures: expected 0, actual 0. ...
+```
+
+For machine-readable JSON use `--json`:
+
+```bash
+node scripts/simulate-fixtures.mjs --json
+```
+
+Use stricter gates to catch regressions:
+
+```bash
+node scripts/simulate-fixtures.mjs --ticks 3000 --require-rcl 3 --require-rcl-by 3000
+```
+
+If any fixture fails its gate the suite exits with a non-zero code, making this suitable for CI.
 
 ## What the simulator tracks
 
