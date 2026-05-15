@@ -28,6 +28,7 @@ function main() {
       "require-rcl": { type: "string" },
       "require-rcl-by": { type: "string" },
       "max-failures": { type: "string", default: "0" },
+      "breadcrumb-limit": { type: "string", default: "20" },
     },
   });
 
@@ -46,6 +47,10 @@ function main() {
     requireRclBy: values["require-rcl-by"],
     maxFailures: values["max-failures"],
   });
+  const breadcrumbLimit = parseNonNegativeInteger(
+    values["breadcrumb-limit"],
+    "--breadcrumb-limit",
+  );
 
   const result = runOfflineSimulation({
     ticks,
@@ -55,6 +60,7 @@ function main() {
     spawnSeed: values["spawn-seed"],
     spawnConfig: values["spawn-config"],
     gates,
+    breadcrumbLimit,
   });
 
   if (values.json && values.markdown) {
@@ -82,6 +88,7 @@ export function runOfflineSimulation({
   spawnSeed,
   spawnConfig = "balanced",
   gates = {},
+  breadcrumbLimit = 20,
 }) {
   const fixture = fixtureName ? getSimulationFixture(fixtureName) : undefined;
   if (fixtureName && fixture === undefined) {
@@ -114,6 +121,17 @@ export function runOfflineSimulation({
   };
 
   const milestones = [];
+  const breadcrumbs = createBreadcrumbBuffer(breadcrumbLimit);
+  recordBreadcrumb(breadcrumbs, {
+    tick: 0,
+    type: "simulation-start",
+    rcl: room.rcl,
+    creeps: room.creeps,
+    energy: room.energy,
+    energyCapacity: room.energyCapacity,
+    spawnConfig: seeds.spawnConfig,
+  });
+
   for (let tick = 1; tick <= ticks; tick += 1) {
     room.tick = tick;
 
@@ -135,6 +153,14 @@ export function runOfflineSimulation({
     ) {
       room.energy -= spawnCost;
       room.creeps += 1;
+      recordBreadcrumb(breadcrumbs, {
+        tick,
+        type: "spawn",
+        spawnCost,
+        creeps: room.creeps,
+        energy: room.energy,
+        rcl: room.rcl,
+      });
     }
 
     const upgradeSpend = Math.min(room.energy, 12 + room.creeps * 2);
@@ -148,6 +174,13 @@ export function runOfflineSimulation({
     if (room.constructionProgress >= room.energyCapacity) {
       room.energyCapacity += 50;
       room.constructionProgress = 0;
+      recordBreadcrumb(breadcrumbs, {
+        tick,
+        type: "energy-capacity-increase",
+        energyCapacity: room.energyCapacity,
+        creeps: room.creeps,
+        rcl: room.rcl,
+      });
     }
 
     const nextRclProgress = progressForNextRcl(room.rcl);
@@ -161,6 +194,14 @@ export function runOfflineSimulation({
         energyCapacity: room.energyCapacity,
         creeps: room.creeps,
       });
+      recordBreadcrumb(breadcrumbs, {
+        tick,
+        type: "rcl-milestone",
+        rcl: room.rcl,
+        energyCapacity: room.energyCapacity,
+        creeps: room.creeps,
+        controllerProgress: room.controllerProgress,
+      });
     }
 
     if (room.energy < 0 || room.creeps <= 0) {
@@ -169,6 +210,14 @@ export function runOfflineSimulation({
         reason: "invalid colony state",
         energy: room.energy,
         creeps: room.creeps,
+      });
+      recordBreadcrumb(breadcrumbs, {
+        tick,
+        type: "failure",
+        reason: "invalid colony state",
+        energy: room.energy,
+        creeps: room.creeps,
+        rcl: room.rcl,
       });
       break;
     }
@@ -181,9 +230,25 @@ export function runOfflineSimulation({
     failures: room.failures,
     milestones,
   });
+  for (const gate of gateResults) {
+    if (!gate.ok) {
+      recordBreadcrumb(breadcrumbs, {
+        tick: room.tick,
+        type: "gate-failure",
+        gate: gate.name,
+        expected: gate.expected,
+        actual: gate.actual,
+        rcl: room.rcl,
+        creeps: room.creeps,
+        energy: room.energy,
+        energyCapacity: room.energyCapacity,
+      });
+    }
+  }
+  const ok = room.failures.length === 0 && gateResults.every((gate) => gate.ok);
 
   return {
-    ok: room.failures.length === 0 && gateResults.every((gate) => gate.ok),
+    ok,
     ticks,
     seed: seeds.baseSeed,
     fixture:
@@ -208,7 +273,26 @@ export function runOfflineSimulation({
     },
     milestones,
     failures: room.failures,
+    breadcrumbs: ok ? [] : breadcrumbs.events,
   };
+}
+
+function createBreadcrumbBuffer(limit) {
+  return {
+    limit,
+    events: [],
+  };
+}
+
+function recordBreadcrumb(buffer, event) {
+  if (buffer.limit === 0) {
+    return;
+  }
+
+  buffer.events.push(event);
+  if (buffer.events.length > buffer.limit) {
+    buffer.events.splice(0, buffer.events.length - buffer.limit);
+  }
 }
 
 function parseGateOptions({ requireRcl, requireRclBy, maxFailures }) {
@@ -379,7 +463,24 @@ export function formatMarkdownReport(result) {
     lines.push("- None.");
   }
 
+  lines.push(``, `### Replay Breadcrumbs`);
+  if (result.breadcrumbs?.length) {
+    for (const event of result.breadcrumbs) {
+      lines.push(formatBreadcrumbMarkdown(event));
+    }
+  } else {
+    lines.push("- None captured; simulation passed all gates.");
+  }
+
   return lines.join("\n");
+}
+
+function formatBreadcrumbMarkdown(event) {
+  const details = Object.entries(event)
+    .filter(([key]) => key !== "tick" && key !== "type")
+    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+    .join(", ");
+  return `- Tick ${event.tick}: ${event.type}${details ? ` (${details})` : ""}`;
 }
 
 function formatSummary(result) {
@@ -419,6 +520,13 @@ function formatSummary(result) {
     lines.push("failures:");
     for (const failure of result.failures) {
       lines.push(`- tick ${failure.tick}: ${failure.reason}`);
+    }
+  }
+
+  if (result.breadcrumbs?.length) {
+    lines.push("replay breadcrumbs:");
+    for (const event of result.breadcrumbs) {
+      lines.push(`- tick ${event.tick}: ${event.type}`);
     }
   }
 
