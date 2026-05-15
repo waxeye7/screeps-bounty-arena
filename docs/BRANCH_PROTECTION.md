@@ -5,6 +5,7 @@ The `main` branch is protected.
 ## Current settings
 
 - Required status check: `Typecheck, tests, and simulation smoke`
+  - This CI job runs lint, typecheck, unit tests, and simulation smoke gates.
 - Require branches to be up to date before merging: yes
 - Force pushes: disabled
 - Branch deletion: disabled

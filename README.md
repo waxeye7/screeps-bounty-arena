@@ -32,6 +32,7 @@ The repo is structured to attract useful PRs rather than vague drive-by changes.
 
 ```bash
 npm install
+npm run lint
 npm run check
 npm test
 npm run simulate:1k
@@ -228,7 +229,7 @@ Concise review checklist:
 - Read the GitHub diff first and confirm the PR matches one issue.
 - Check for secrets, generated local state, unrelated rewrites, and suspicious binaries.
 - Review code directly in GitHub or from the PR branch; do not use external archive downloads for code review.
-- Run `npm run check` and `npm test`; add simulation proof when gameplay or economy behavior changes.
+- Run `npm run lint`, `npm run check`, and `npm test`; add simulation proof when gameplay or economy behavior changes.
 - Decide clearly: merge, request changes, close duplicate, or defer.
 
 ## Suggested GitHub topics

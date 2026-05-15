@@ -16,6 +16,7 @@ Closes #
 ## Verification
 
 - [ ] `npm run check`
+- [ ] `npm run lint`
 - [ ] `npm test`
 - [ ] `npm run simulate:1k` when gameplay/economy behavior changed
 - [ ] `npm run simulate:10k` when RCL/economy milestones changed

@@ -55,10 +55,13 @@
     "simulate:seeded:markdown": "node scripts/simulate-seeded.mjs --runs 3 --ticks 3000 --require-rcl 3 --require-rcl-by 3000 --markdown"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "latest",
     "eslint": "latest",
+    "globals": "^17.6.0",
     "prettier": "latest",
     "typescript": "latest",
+    "typescript-eslint": "^8.59.3",
     "vitest": "latest"
   }
 }
