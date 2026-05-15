@@ -19,6 +19,11 @@ describe("offline simulation", () => {
       gates: Array<{ name: string; ok: boolean }>;
       final: { rcl: number; creeps: number; energyCapacity: number };
       milestones: Array<{ tick: number; rcl: number }>;
+      metrics: {
+        actions: number;
+        cpuEstimate: number;
+        byType: { harvest: number; spawn: number; upgrade: number; build: number };
+      };
     };
 
     expect(result.ok).toBe(true);
@@ -35,6 +40,10 @@ describe("offline simulation", () => {
     expect(result.final.creeps).toBeGreaterThan(1);
     expect(result.final.energyCapacity).toBeGreaterThanOrEqual(300);
     expect(result.milestones.length).toBeGreaterThan(0);
+    expect(result.metrics.actions).toBeGreaterThan(1000);
+    expect(result.metrics.cpuEstimate).toBeGreaterThan(0);
+    expect(result.metrics.byType.harvest).toBeGreaterThan(0);
+    expect(result.metrics.byType.upgrade).toBeGreaterThan(0);
     expect(result.gates).toContainEqual({
       name: "max-failures",
       ok: true,
@@ -160,6 +169,8 @@ describe("offline simulation", () => {
     expect(output).toContain("| Energy capacity |");
     expect(output).toContain("| Creep count |");
     expect(output).toContain("| Failures |");
+    expect(output).toContain("| Actions |");
+    expect(output).toContain("| CPU estimate |");
     expect(output).toContain("### Gates");
     expect(output).toContain("### Milestones");
   });

@@ -112,6 +112,11 @@ export function runOfflineSimulation({
     constructionProgress: initialRoom.constructionProgress ?? 0,
     failures: [],
   };
+  const metrics = {
+    actions: 0,
+    cpuEstimate: 0,
+    byType: { harvest: 0, spawn: 0, upgrade: 0, build: 0 },
+  };
 
   const milestones = [];
   for (let tick = 1; tick <= ticks; tick += 1) {
@@ -122,6 +127,7 @@ export function runOfflineSimulation({
         (8 + Math.floor(roomRng() * 3)) *
         (fixture?.harvestMultiplier ?? 1),
     );
+    recordMetric(metrics, "harvest", room.creeps, 0.2);
     const upkeep = Math.max(0, room.creeps - 2) * 2;
     room.energy = Math.min(
       room.energyCapacity,
@@ -135,15 +141,22 @@ export function runOfflineSimulation({
     ) {
       room.energy -= spawnCost;
       room.creeps += 1;
+      recordMetric(metrics, "spawn", 1, 1.5);
     }
 
     const upgradeSpend = Math.min(room.energy, 12 + room.creeps * 2);
     room.energy -= upgradeSpend;
     room.controllerProgress += upgradeSpend;
+    if (upgradeSpend > 0) {
+      recordMetric(metrics, "upgrade", 1, 0.5);
+    }
 
     const buildSpend = Math.min(room.energy, room.rcl >= 2 ? 8 : 3);
     room.energy -= buildSpend;
     room.constructionProgress += buildSpend;
+    if (buildSpend > 0) {
+      recordMetric(metrics, "build", 1, 0.4);
+    }
 
     if (room.constructionProgress >= room.energyCapacity) {
       room.energyCapacity += 50;
@@ -208,6 +221,21 @@ export function runOfflineSimulation({
     },
     milestones,
     failures: room.failures,
+    metrics: finalizeMetrics(metrics),
+  };
+}
+
+function recordMetric(metrics, type, actions, cpuPerAction) {
+  metrics.actions += actions;
+  metrics.cpuEstimate += actions * cpuPerAction;
+  metrics.byType[type] += actions;
+}
+
+function finalizeMetrics(metrics) {
+  return {
+    actions: metrics.actions,
+    cpuEstimate: Number(metrics.cpuEstimate.toFixed(2)),
+    byType: metrics.byType,
   };
 }
 
@@ -344,6 +372,8 @@ export function formatMarkdownReport(result) {
     `| Energy capacity | ${result.final.energyCapacity} |`,
     `| Creep count | ${result.final.creeps} |`,
     `| Failures | ${result.failures.length} |`,
+    `| Actions | ${result.metrics.actions} |`,
+    `| CPU estimate | ${result.metrics.cpuEstimate} |`,
     ``,
     `### Gates`,
   ];
@@ -397,6 +427,8 @@ function formatSummary(result) {
     `final RCL: ${result.final.rcl}`,
     `creeps: ${result.final.creeps}`,
     `energy capacity: ${result.final.energyCapacity}`,
+    `actions: ${result.metrics.actions}`,
+    `CPU estimate: ${result.metrics.cpuEstimate}`,
   ];
 
   if (result.gates?.length) {
