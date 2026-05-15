@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildWorkerBody, ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders, ensureEmergencyRecovery } from '../src/planning/spawn';
+import { mockConstructionSite, mockGame, mockRoomFixture, mockSource } from './fixtures/rooms';
 
 describe('buildWorkerBody', () => {
   it('keeps the minimal 200-energy worker body', () => {
@@ -17,213 +18,149 @@ describe('buildWorkerBody', () => {
   });
 });
 
-const defaultSource = { id: 'source1', pos: { isNearTo: () => true } } as Source;
-
-function makeSpawn(
-  calls: unknown[],
-  energyAvailable = 200,
-  constructionSites: ConstructionSite[] = [],
-  sources: Source[] = [defaultSource],
-  spawning: unknown = null,
-  spawnResult = 0,
-): StructureSpawn {
-  return {
-    id: 'spawn1',
-    name: 'Spawn1',
-    spawning,
-    pos: { isNearTo: () => true },
-    room: {
-      energyAvailable,
-      find: (type: number) => {
-        if (type === FIND_CONSTRUCTION_SITES) return constructionSites;
-        if (type === FIND_SOURCES) return sources;
-        return [];
-      },
-    },
-    structureType: STRUCTURE_SPAWN,
-    spawnCreep: (...args: unknown[]) => {
-      calls.push(args);
-      return spawnResult;
-    },
-  } as unknown as StructureSpawn;
-}
-
 describe('spawn planning', () => {
 
   it('detects emergency but waits when energy is below the cheapest worker body', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 999,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
-
-    const spawn = makeSpawn(calls, 100);
+    mockGame({ time: 999 });
+    const { spawn } = mockRoomFixture({ energyAvailable: 100 });
     const isEmergency = ensureEmergencyRecovery(spawn);
 
     expect(isEmergency).toBe(true);
-    expect(calls).toHaveLength(0);
+    expect(spawn.room.find(FIND_MY_SPAWNS)).toHaveLength(1);
   });
 
   it('detects emergency and uses available energy for recovery worker', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 999,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
-
-    const spawn = makeSpawn(calls, 300);
+    mockGame({ time: 999 });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 300 });
     const isEmergency = ensureEmergencyRecovery(spawn);
 
     expect(isEmergency).toBe(true);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual([[WORK, CARRY, MOVE, WORK], 'RecoveryHarvester999', { memory: { role: 'harvester' } }]);
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual({ body: [WORK, CARRY, MOVE, WORK], name: 'RecoveryHarvester999', opts: { memory: { role: 'harvester' } } });
   });
 
   it('returns false for non-emergency scenarios', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 999,
-      creeps: {
-        Harvester1: { memory: { role: 'harvester' } } as Creep,
-      },
-      spawns: {},
-    } as GameGlobal;
-
-    const spawn = makeSpawn(calls, 300);
+    mockGame({ time: 999, creeps: [{ name: 'Harvester1', memory: { role: 'harvester' } } as Creep] });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 300 });
     const isEmergency = ensureEmergencyRecovery(spawn);
 
     expect(isEmergency).toBe(false);
-    expect(calls).toHaveLength(0);
+    expect(spawnCalls).toHaveLength(0);
   });
 
   it('spawns a harvester when below target', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 123,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
+    mockGame({ time: 123 });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 400 });
 
-    ensureBasicHarvesters(makeSpawn(calls, 400), 1);
+    ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual([
-      [WORK, CARRY, MOVE, WORK, CARRY, MOVE],
-      'Harvester123',
-      { memory: { role: 'harvester' } },
-    ]);
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual({
+      body: [WORK, CARRY, MOVE, WORK, CARRY, MOVE],
+      name: 'Harvester123',
+      opts: { memory: { role: 'harvester' } },
+    });
   });
 
   it('does not spawn a harvester while the spawn is busy', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 124,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
+    mockGame({ time: 124 });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 300 });
+    (spawn as unknown as { spawning: unknown }).spawning = { name: 'Harvester123' };
 
-    ensureBasicHarvesters(makeSpawn(calls, 300, [], [defaultSource], { name: 'Harvester123' }), 1);
+    ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(0);
+    expect(spawnCalls).toHaveLength(0);
   });
 
   it('does not spawn a harvester when room energy is below the cheapest worker body', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 125,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
+    mockGame({ time: 125 });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 199 });
 
-    ensureBasicHarvesters(makeSpawn(calls, 199), 1);
+    ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(0);
+    expect(spawnCalls).toHaveLength(0);
   });
 
   it('does not spawn a harvester when no sources are visible', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 126,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
+    mockGame({ time: 126 });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 300, sources: [] });
 
-    ensureBasicHarvesters(makeSpawn(calls, 300, [], []), 1);
+    ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(0);
+    expect(spawnCalls).toHaveLength(0);
   });
 
   it('does not spawn a harvester when the desired count is already satisfied', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 127,
-      creeps: {
-        Harvester1: { memory: { role: 'harvester' } } as Creep,
-      },
-      spawns: {},
-    } as GameGlobal;
+    mockGame({ time: 127, creeps: [{ name: 'Harvester1', memory: { role: 'harvester' } } as Creep] });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 300 });
 
-    ensureBasicHarvesters(makeSpawn(calls, 300), 1);
+    ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(0);
+    expect(spawnCalls).toHaveLength(0);
   });
 
   it('does not repeat failed spawn attempts in the same tick', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
-      time: 128,
-      creeps: {},
-      spawns: {},
-    } as GameGlobal;
+    mockGame({ time: 128 });
+    // Use a spawn that returns error code -6
+    const { room } = mockRoomFixture({ energyAvailable: 300 });
+    const spawnCalls: unknown[] = [];
+    const spawn = {
+      id: 'spawn1',
+      name: 'Spawn1',
+      spawning: null,
+      pos: { isNearTo: () => true },
+      room,
+      structureType: STRUCTURE_SPAWN,
+      store: { getFreeCapacity: () => 300, getUsedCapacity: () => 0 },
+      spawnCreep: (...args: unknown[]) => {
+        spawnCalls.push(args);
+        return -6;
+      },
+    } as unknown as StructureSpawn;
 
-    const spawn = makeSpawn(calls, 300, [], [defaultSource], null, -6);
     ensureBasicHarvesters(spawn, 1);
     ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(1);
+    expect(spawnCalls).toHaveLength(1);
 
     globalThis.Game.time = 129;
     ensureBasicHarvesters(spawn, 1);
 
-    expect(calls).toHaveLength(2);
+    expect(spawnCalls).toHaveLength(2);
   });
 
   it('spawns an upgrader after basic harvester coverage exists', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
+    mockGame({
       time: 456,
-      creeps: {
-        Harvester1: { memory: { role: 'harvester' } } as Creep,
-        Harvester2: { memory: { role: 'harvester' } } as Creep,
-        Harvester3: { memory: { role: 'harvester' } } as Creep,
-      },
-      spawns: {},
-    } as GameGlobal;
+      creeps: [
+        { name: 'Harvester1', memory: { role: 'harvester' } } as Creep,
+        { name: 'Harvester2', memory: { role: 'harvester' } } as Creep,
+        { name: 'Harvester3', memory: { role: 'harvester' } } as Creep,
+      ],
+    });
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 200 });
 
-    ensureBasicUpgraders(makeSpawn(calls), 1);
+    ensureBasicUpgraders(spawn, 1);
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual([[WORK, CARRY, MOVE], 'Upgrader456', { memory: { role: 'upgrader' } }]);
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual({ body: [WORK, CARRY, MOVE], name: 'Upgrader456', opts: { memory: { role: 'upgrader' } } });
   });
 
   it('spawns a builder when construction exists after basic harvester coverage', () => {
-    const calls: unknown[] = [];
-    globalThis.Game = {
+    mockGame({
       time: 789,
-      creeps: {
-        Harvester1: { memory: { role: 'harvester' } } as Creep,
-        Harvester2: { memory: { role: 'harvester' } } as Creep,
-        Harvester3: { memory: { role: 'harvester' } } as Creep,
-      },
-      spawns: {},
-    } as GameGlobal;
+      creeps: [
+        { name: 'Harvester1', memory: { role: 'harvester' } } as Creep,
+        { name: 'Harvester2', memory: { role: 'harvester' } } as Creep,
+        { name: 'Harvester3', memory: { role: 'harvester' } } as Creep,
+      ],
+    });
+    const site = mockConstructionSite('site1');
+    const { spawn, spawnCalls } = mockRoomFixture({ energyAvailable: 200, constructionSites: [site] });
 
-    const site = { id: 'site1', pos: { isNearTo: () => true } } as ConstructionSite;
-    ensureBasicBuilders(makeSpawn(calls, 200, [site]), 1);
+    ensureBasicBuilders(spawn, 1);
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual([[WORK, CARRY, MOVE], 'Builder789', { memory: { role: 'builder' } }]);
+    expect(spawnCalls).toHaveLength(1);
+    expect(spawnCalls[0]).toEqual({ body: [WORK, CARRY, MOVE], name: 'Builder789', opts: { memory: { role: 'builder' } } });
   });
 });
