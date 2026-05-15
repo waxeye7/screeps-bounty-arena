@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildWorkerBody, ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders, ensureEmergencyRecovery } from '../src/planning/spawn';
+import { buildWorkerBody, ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders, ensureContainerMiningEconomy, ensureEmergencyRecovery } from '../src/planning/spawn';
 
 describe('buildWorkerBody', () => {
   it('keeps the minimal 200-energy worker body', () => {
@@ -226,4 +226,89 @@ describe('spawn planning', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]).toEqual([[WORK, CARRY, MOVE], 'Builder789', { memory: { role: 'builder' } }]);
   });
+
+  describe('container mining economy', () => {
+    it('does NOT spawn miner/hauler when harvesters are below desired count (2 < 3)', () => {
+      const calls: unknown[] = [];
+
+      const container = { id: 'c1', pos: { isNearTo: (p: any) => true }, structureType: STRUCTURE_CONTAINER } as StructureContainer;
+      const source = { id: 's1', pos: { isNearTo: (p: any) => true } } as Source;
+      const spawn = {
+        id: 'spawn1',
+        name: 'Spawn1',
+        spawning: null,
+        pos: { isNearTo: () => true },
+        room: {
+          energyAvailable: 400,
+          find: (type: number) => {
+            if (type === FIND_CONSTRUCTION_SITES) return [];
+            if (type === FIND_SOURCES) return [source];
+            if (type === FIND_STRUCTURES) return [container];
+            return [];
+          },
+        },
+        structureType: STRUCTURE_SPAWN,
+        spawnCreep: (...args: unknown[]) => {
+          calls.push(args);
+          return 0;
+        },
+      } as unknown as StructureSpawn;
+
+      globalThis.Game = {
+        time: 100,
+        creeps: {
+          HarvesterA: { memory: { role: 'harvester' } } as Creep,
+          HarvesterB: { memory: { role: 'harvester' } } as Creep,
+        },
+        spawns: {},
+      } as GameGlobal;
+
+      ensureContainerMiningEconomy(spawn, 1, 1);
+
+      expect(calls).toHaveLength(0);
+    });
+
+    it('spawns miner and hauler when harvesters meet required count (3)', () => {
+      const calls: unknown[] = [];
+
+      const container = { id: 'c1', pos: { isNearTo: (p: any) => true }, structureType: STRUCTURE_CONTAINER } as StructureContainer;
+      const source = { id: 's1', pos: { isNearTo: (p: any) => true } } as Source;
+      const spawn = {
+        id: 'spawn1',
+        name: 'Spawn1',
+        spawning: null,
+        pos: { isNearTo: () => true },
+        room: {
+          energyAvailable: 400,
+          find: (type: number) => {
+            if (type === FIND_CONSTRUCTION_SITES) return [];
+            if (type === FIND_SOURCES) return [source];
+            if (type === FIND_STRUCTURES) return [container];
+            return [];
+          },
+        },
+        structureType: STRUCTURE_SPAWN,
+        spawnCreep: (...args: unknown[]) => {
+          calls.push(args);
+          return 0;
+        },
+      } as unknown as StructureSpawn;
+
+      globalThis.Game = {
+        time: 101,
+        creeps: {
+          HarvesterA: { memory: { role: 'harvester' } } as Creep,
+          HarvesterB: { memory: { role: 'harvester' } } as Creep,
+          HarvesterC: { memory: { role: 'harvester' } } as Creep,
+        },
+        spawns: {},
+      } as GameGlobal;
+
+      ensureContainerMiningEconomy(spawn, 1, 1);
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0][1]).toMatch(/Miner101/);
+    });
+  });
+
 });

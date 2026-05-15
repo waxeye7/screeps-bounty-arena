@@ -83,7 +83,7 @@ export function ensureContainerMiningEconomy(
   spawn: StructureSpawn,
   desiredMiners = 1,
   desiredHaulers = 1,
-  requiredHarvesters = 2,
+  requiredHarvesters = 3,
 ): void {
   if (spawn.spawning) return;
 

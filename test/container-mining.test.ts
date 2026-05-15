@@ -82,6 +82,7 @@ describe('container mining economy', () => {
       creeps: {
         Harvester1: { memory: { role: 'harvester' } } as Creep,
         Harvester2: { memory: { role: 'harvester' } } as Creep,
+        Harvester3: { memory: { role: 'harvester' } } as Creep,
       },
       spawns: { Spawn1: spawn },
     } as GameGlobal;
