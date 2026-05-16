@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildWorkerBody, ensureBasicBuilders, ensureBasicHarvesters, ensureBasicUpgraders, ensureEmergencyRecovery } from '../src/planning/spawn';
-import { mockConstructionSite, mockGame, mockRoomFixture, mockSource } from './fixtures/rooms';
+import { mockConstructionSite, mockGame, mockRoomFixture } from './fixtures/rooms';
 
 describe('buildWorkerBody', () => {
   it('keeps the minimal 200-energy worker body', () => {
